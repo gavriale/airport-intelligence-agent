@@ -9,6 +9,10 @@ from app.settings import Settings
 
 async def main() -> None:
     container = await build_container(Settings())
+    if container.agent is None:
+        print("Set ANTHROPIC_API_KEY in .env to chat.")
+        await container.close()
+        return
     session_id = str(uuid.uuid4())
     try:
         while True:

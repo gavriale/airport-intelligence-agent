@@ -27,7 +27,7 @@ LLM_CACHE_DIR = DOMAIN_DIR.parent / ".llm_cache"
 
 @dataclass
 class Container:
-    agent: Agent
+    agent: Agent | None  # None when no API key is set; GET /ranking still works
     sessions: SessionStore
     analytics: Analytics  # also serves GET /ranking, which needs no model
     close: Callable[[], Awaitable[None]]
@@ -56,8 +56,9 @@ async def build_container(
     close = _noop
     if repository is None:
         repository, close = await _build_repository(settings)
-    if llm is None:
-        llm = AnthropicLLM(settings.anthropic_api_key.get_secret_value(), settings.model)
+    api_key = settings.anthropic_api_key.get_secret_value().strip()
+    if llm is None and api_key:
+        llm = AnthropicLLM(api_key, settings.model)
         if settings.llm_cache:
             llm = CachingLLMProvider(llm, LLM_CACHE_DIR, settings.model)
 
@@ -66,12 +67,16 @@ async def build_container(
     )
     tools = ToolRegistry(build_tools(analytics), timeout_s=settings.tool_timeout_s)
     sessions = MemorySessionStore()
-    agent = Agent(
-        llm,
-        sessions,
-        tools,
-        (DOMAIN_DIR / "system_prompt.md").read_text(encoding="utf-8"),
-        llm_timeout_s=settings.llm_timeout_s,
-        max_iterations=settings.max_iterations,
+    agent = (
+        Agent(
+            llm,
+            sessions,
+            tools,
+            (DOMAIN_DIR / "system_prompt.md").read_text(encoding="utf-8"),
+            llm_timeout_s=settings.llm_timeout_s,
+            max_iterations=settings.max_iterations,
+        )
+        if llm
+        else None
     )
     return Container(agent=agent, sessions=sessions, analytics=analytics, close=close)

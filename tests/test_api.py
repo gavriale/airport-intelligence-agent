@@ -94,3 +94,28 @@ async def test_ranking_endpoint_reports_bad_input_clearly(rig, analytics):
     assert unknown.status_code == 400
     assert unknown.json()["detail"]["code"] == "unknown_region"
     assert too_big.status_code == 422
+
+
+async def test_chat_without_an_api_key_is_a_clear_503_and_ranking_still_works(analytics):
+    app = create_app(Container(agent=None, sessions=None, analytics=analytics, close=_noop))
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        chat = await client.post("/chat", json={"message": "hi"})
+        ranking = await client.get("/ranking", params={"region": "New England", "top_n": 2})
+
+    assert chat.status_code == 503
+    assert chat.json()["detail"] == "Set ANTHROPIC_API_KEY to chat; GET /ranking works without it."
+    assert ranking.status_code == 200
+
+
+async def test_a_blank_api_key_builds_a_container_without_an_agent():
+    from app.container import build_container
+    from app.settings import Settings
+
+    settings = Settings(anthropic_api_key="  ", data_backend="memory", _env_file=None)
+    container = await build_container(settings)
+
+    assert container.agent is None
+    assert (await container.analytics.rank("New England", None, 1, None))["ranking"]

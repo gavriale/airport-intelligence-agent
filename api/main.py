@@ -16,6 +16,7 @@ from core.errors import ToolExecutionError
 from core.logging import configure_logging, correlation_id
 
 MAX_MESSAGE_CHARS = 2000
+NO_API_KEY_MESSAGE = "Set ANTHROPIC_API_KEY to chat; GET /ranking works without it."
 CHAT_PAGE = Path(__file__).resolve().parent / "static" / "index.html"
 
 
@@ -75,6 +76,8 @@ def create_app(container: Container | None = None) -> FastAPI:
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(request: ChatRequest) -> ChatResponse:
+        if app.state.container.agent is None:
+            raise HTTPException(503, detail=NO_API_KEY_MESSAGE)
         correlation_id.set(str(uuid.uuid4()))
         # Server-generated IDs are unguessable; a real deployment binds them to an auth token.
         session_id = request.session_id or str(uuid.uuid4())

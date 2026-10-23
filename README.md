@@ -27,7 +27,7 @@ Try: *Which airports in New England are strong candidates for terminal expansion
 
 - `make test`: unit and API tests with a fake model, no network (Postgres tests are skipped if it is not running).
 - `GET /ranking`: the deterministic ranking, for example `curl "localhost:8000/ranking?region=New%20England"`. Also `GET /health`. (Start the API with `docker compose up`, or `DATA_BACKEND=memory uvicorn api.main:app_factory --factory`.)
-- `/chat` needs a key; without one it returns a server error.
+- `/chat` needs a key; without one it returns 503 with "Set ANTHROPIC_API_KEY to chat; GET /ranking works without it."
 
 `make lint`, `make eval` (calls the live model, about $1 and 90 seconds), `make ingest` (rebuilds `domain/data/` from the public APIs, needs internet, about a minute).
 
