@@ -1,0 +1,56 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CLI chat (in-memory data)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DATA_BACKEND": "fake",
+        "LLM_TIMEOUT_S": "3600",
+        "TOOL_TIMEOUT_S": "3600"
+      }
+    },
+    {
+      "name": "API server (in-memory data)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["api.main:app_factory", "--factory", "--port", "8000"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DATA_BACKEND": "fake",
+        "LLM_TIMEOUT_S": "3600",
+        "TOOL_TIMEOUT_S": "3600"
+      }
+    },
+    {
+      "name": "API server (Postgres on 5433)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["api.main:app_factory", "--factory", "--port", "8000"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DATA_BACKEND": "postgres",
+        "DATABASE_URL": "postgresql://agent:agent@localhost:5433/agent",
+        "LLM_TIMEOUT_S": "3600",
+        "TOOL_TIMEOUT_S": "3600"
+      }
+    },
+    {
+      "name": "Current test file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-x", "-s"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}

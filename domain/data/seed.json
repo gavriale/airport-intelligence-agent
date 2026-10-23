@@ -1,0 +1,49 @@
+{
+  "products": [
+    {"product_id": "MM", "name": "Example Money Market Fund", "kind": "money_market"},
+    {"product_id": "BOND", "name": "Example Government Bond Fund", "kind": "bond"},
+    {"product_id": "TA35", "name": "Example Tel Aviv 35 Index Fund", "kind": "equity_index"},
+    {"product_id": "GLOBAL", "name": "Example Global Equity Fund", "kind": "equity"}
+  ],
+  "customers": [
+    {"customer_id": "C001", "name": "Dana Levi", "phone_last4": "4412"},
+    {"customer_id": "C002", "name": "Yossi Cohen", "phone_last4": "9087"},
+    {"customer_id": "C003", "name": "Noa Mizrahi", "phone_last4": "1156"},
+    {"customer_id": "C004", "name": "Amit Peretz", "phone_last4": "7731"},
+    {"customer_id": "C005", "name": "Tamar Katz", "phone_last4": "2204"},
+    {"customer_id": "C006", "name": "Eitan Shapiro", "phone_last4": "6590"},
+    {"customer_id": "C007", "name": "Michal Barak", "phone_last4": "3318"},
+    {"customer_id": "C008", "name": "Omer Friedman", "phone_last4": "8843"},
+    {"customer_id": "C009", "name": "Shira Golan", "phone_last4": "5072"},
+    {"customer_id": "C010", "name": "Lior Avraham", "phone_last4": "1999"}
+  ],
+  "holdings": [
+    {"customer_id": "C001", "product_id": "MM", "units": 1200.0, "value_nis": 45400.00},
+    {"customer_id": "C001", "product_id": "TA35", "units": 310.5, "value_nis": 80000.00},
+    {"customer_id": "C002", "product_id": "BOND", "units": 800.0, "value_nis": 152300.50},
+    {"customer_id": "C003", "product_id": "GLOBAL", "units": 95.2, "value_nis": 61250.00},
+    {"customer_id": "C003", "product_id": "MM", "units": 400.0, "value_nis": 15000.00},
+    {"customer_id": "C004", "product_id": "MM", "units": 50.0, "value_nis": 8200.00},
+    {"customer_id": "C005", "product_id": "TA35", "units": 700.0, "value_nis": 203100.00},
+    {"customer_id": "C006", "product_id": "BOND", "units": 120.0, "value_nis": 23800.00},
+    {"customer_id": "C007", "product_id": "GLOBAL", "units": 410.0, "value_nis": 987654.00},
+    {"customer_id": "C008", "product_id": "MM", "units": 900.0, "value_nis": 33500.00},
+    {"customer_id": "C009", "product_id": "BOND", "units": 60.0, "value_nis": 11900.00},
+    {"customer_id": "C010", "product_id": "TA35", "units": 20.0, "value_nis": 5600.00}
+  ],
+  "transactions": [
+    {"id": 1, "customer_id": "C001", "booked_on": "2025-09-02", "kind": "deposit", "product_id": "MM", "amount_nis": 10000.00},
+    {"id": 2, "customer_id": "C001", "booked_on": "2025-09-15", "kind": "buy", "product_id": "TA35", "amount_nis": -20000.00},
+    {"id": 3, "customer_id": "C001", "booked_on": "2025-10-01", "kind": "fee", "product_id": null, "amount_nis": -105.50},
+    {"id": 4, "customer_id": "C001", "booked_on": "2025-10-10", "kind": "deposit", "product_id": "MM", "amount_nis": 5000.00},
+    {"id": 5, "customer_id": "C002", "booked_on": "2025-08-20", "kind": "deposit", "product_id": "BOND", "amount_nis": 50000.00},
+    {"id": 6, "customer_id": "C002", "booked_on": "2025-10-05", "kind": "fee", "product_id": null, "amount_nis": -210.00},
+    {"id": 7, "customer_id": "C003", "booked_on": "2025-09-28", "kind": "buy", "product_id": "GLOBAL", "amount_nis": -15000.00},
+    {"id": 8, "customer_id": "C007", "booked_on": "2025-10-02", "kind": "deposit", "product_id": "GLOBAL", "amount_nis": 200000.00}
+  ],
+  "withdrawal_requests": [
+    {"request_id": "W-1001", "customer_id": "C001", "amount_nis": 3000.00, "status": "completed", "created_on": "2025-09-20", "idempotency_key": "seed-1001"},
+    {"request_id": "W-1002", "customer_id": "C001", "amount_nis": 7500.00, "status": "pending", "created_on": "2025-10-12", "idempotency_key": "seed-1002"},
+    {"request_id": "W-1003", "customer_id": "C002", "amount_nis": 20000.00, "status": "rejected", "created_on": "2025-10-01", "idempotency_key": "seed-1003"}
+  ]
+}

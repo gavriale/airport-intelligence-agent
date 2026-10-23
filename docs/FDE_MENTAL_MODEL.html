@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI engineer and FDE mental model</title>
+<style>
+  :root {
+    --bg:#f6f6f3; --panel:#ffffff; --ink:#1d1d1b; --muted:#63635c; --line:#e0e0d8;
+    --accent:#2b59c3; --accent-soft:#e8eefb; --ok:#1f7a4d; --ok-soft:#e2f3ea;
+    --warn:#a8570b; --warn-soft:#fbeedd; --bad:#b3261e; --bad-soft:#fbe5e3;
+    --llm:#6b3fa0; --llm-soft:#efe7f8; --code-bg:#f1f1ec; --shadow:0 1px 2px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#151514; --panel:#1f1f1d; --ink:#ecece8; --muted:#a4a49b; --line:#33332f;
+      --accent:#8fb0ff; --accent-soft:#222c48; --ok:#6fd3a0; --ok-soft:#1b3227;
+      --warn:#f0b36a; --warn-soft:#3a2b17; --bad:#ff9a92; --bad-soft:#3d1f1d;
+      --llm:#c6a4f0; --llm-soft:#31244a; --code-bg:#161615; --shadow:none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#151514; --panel:#1f1f1d; --ink:#ecece8; --muted:#a4a49b; --line:#33332f;
+    --accent:#8fb0ff; --accent-soft:#222c48; --ok:#6fd3a0; --ok-soft:#1b3227;
+    --warn:#f0b36a; --warn-soft:#3a2b17; --bad:#ff9a92; --bad-soft:#3d1f1d;
+    --llm:#c6a4f0; --llm-soft:#31244a; --code-bg:#161615; --shadow:none;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { max-width:980px; margin:0 auto; padding:22px 16px 0; }
+  header h1 { margin:0 0 4px; font-size:24px; }
+  header p { margin:0; color:var(--muted); max-width:75ch; }
+  .topbtns { float:right; display:flex; gap:6px; }
+  .btn { appearance:none; border:1px solid var(--line); background:var(--panel); color:var(--ink); font:inherit; font-size:13px; padding:5px 12px; border-radius:8px; cursor:pointer; }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  nav { position:sticky; top:0; z-index:10; background:var(--bg); border-bottom:1px solid var(--line); margin-top:16px; }
+  .tabs { max-width:980px; margin:0 auto; padding:0 16px; display:flex; gap:2px; overflow-x:auto; }
+  .tab { appearance:none; border:0; background:none; color:var(--muted); font:inherit; font-size:14px; padding:11px 11px; cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; }
+  .tab:hover { color:var(--ink); }
+  .tab[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  main { max-width:980px; margin:0 auto; padding:26px 16px 80px; }
+  section[hidden] { display:none; }
+  h2 { font-size:26px; margin:0 0 6px; line-height:1.25; }
+  h3 { font-size:19px; margin:30px 0 6px; line-height:1.3; }
+  h4 { font-size:15px; margin:18px 0 4px; }
+  p { margin:8px 0 12px; max-width:78ch; }
+  ul, ol { max-width:78ch; padding-left:24px; }
+  li { margin:5px 0; }
+  .lead { color:var(--muted); font-size:17px; max-width:75ch; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em; background:var(--code-bg); padding:1px 6px; border-radius:5px; }
+  pre { background:var(--code-bg); border:1px solid var(--line); padding:13px 15px; border-radius:10px; overflow-x:auto; font-size:13px; line-height:1.55; margin:12px 0; }
+  pre code { background:none; padding:0; font-size:inherit; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:14px 0; box-shadow:var(--shadow); }
+  .card > :first-child { margin-top:0; }
+  .grid { display:grid; gap:14px; }
+  .g2 { grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+  .g3 { grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
+  .callout { border-left:4px solid var(--accent); background:var(--accent-soft); padding:12px 16px; border-radius:0 10px 10px 0; margin:16px 0; max-width:82ch; }
+  .callout > :first-child { margin-top:0; } .callout > :last-child { margin-bottom:0; }
+  .callout.say { border-color:var(--ok); background:var(--ok-soft); }
+  .callout.trap { border-color:var(--bad); background:var(--bad-soft); }
+  .callout.repo { border-color:var(--llm); background:var(--llm-soft); }
+  .callout.warn { border-color:var(--warn); background:var(--warn-soft); }
+  .callout .lbl { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:3px; color:var(--muted); }
+  .tag { display:inline-block; font-size:11.5px; font-weight:600; padding:1px 9px; border-radius:99px; background:var(--accent-soft); color:var(--accent); margin-right:4px; }
+  .tag.ok { background:var(--ok-soft); color:var(--ok); } .tag.warn { background:var(--warn-soft); color:var(--warn); }
+  .tag.bad { background:var(--bad-soft); color:var(--bad); } .tag.llm { background:var(--llm-soft); color:var(--llm); }
+  table { border-collapse:collapse; width:100%; background:var(--panel); border:1px solid var(--line); font-size:14.5px; margin:12px 0; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:var(--code-bg); font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  tr:last-child td { border-bottom:0; }
+  .tw { overflow-x:auto; }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:10px 0; padding:0 16px; }
+  details[open] { padding-bottom:12px; }
+  summary { cursor:pointer; padding:12px 0; font-weight:600; list-style:none; }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"+"; display:inline-block; width:20px; color:var(--accent); font-weight:700; }
+  details[open] > summary::before { content:"–"; }
+  details p:first-of-type { margin-top:2px; }
+  .iceberg { display:grid; grid-template-rows:auto auto; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:18px 0; }
+  .iceberg .air { background:var(--accent-soft); padding:16px 20px; text-align:center; }
+  .iceberg .sea { background:var(--llm-soft); padding:16px 20px; }
+  .iceberg .row { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-top:10px; }
+  .iceberg .tile { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:14px; }
+  .iceberg .tile b { display:block; }
+  .flowline { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0; }
+  .flowline .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:14px; }
+  .flowline .box.llm { border-color:var(--llm); background:var(--llm-soft); }
+  .flowline .box.code { border-color:var(--ok); background:var(--ok-soft); }
+  .flowline .arr { color:var(--muted); }
+  .check { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-bottom:1px solid var(--line); }
+  .check:last-child { border-bottom:0; }
+  .check input { margin-top:6px; width:17px; height:17px; accent-color:var(--ok); }
+  .check label { cursor:pointer; flex:1; }
+  .meter { height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin:6px 0 14px; max-width:420px; }
+  .meter i { display:block; height:100%; width:0; background:var(--ok); transition:width .2s; }
+  .big { font-size:34px; font-weight:700; line-height:1.1; }
+  .kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0; }
+  .kv div { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  .kv div span { display:block; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .kv div b { font-size:20px; }
+  .pager { display:flex; justify-content:space-between; gap:10px; margin-top:40px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="topbtns"><button class="btn" id="theme" type="button">Light / dark</button></div>
+  <h1>Being an AI software engineer and a forward deployed engineer</h1>
+  <p>A mental model for the interview. It starts with what an agent really is, goes through the five things that make up the real engineering work, and ends with the FDE role and an interview kit. Every idea is tied to the project in this repo, so you can point at real code.</p>
+</header>
+<nav><div class="tabs" role="tablist" id="tabs"></div></nav>
+<main id="main">
+
+<!-- =============== 1. MENTAL MODEL =============== -->
+<section data-tab="1. The mental model">
+  <h2>The mental model in one page</h2>
+  <p class="lead">An AI agent is a language model running in a loop, with tools it can request and state it can remember. The loop is small. Almost all of the engineering is everything around it.</p>
+
+  <h3>What the model actually is</h3>
+  <p>Start from the right picture of the model, because every design decision follows from it. A language model, from your code's point of view, is a function. You give it text (a system prompt, the conversation so far, and descriptions of the tools it may use). It gives you back text, or a request to use a tool. That is all.</p>
+  <ul>
+    <li><b>It is stateless.</b> It remembers nothing between calls. If it "remembers" your name, it is because your code sent the earlier messages again.</li>
+    <li><b>It is not deterministic.</b> The same input can produce different outputs. You cannot test it like a normal function with one expected answer.</li>
+    <li><b>It can be confidently wrong.</b> It writes plausible text. It does not know when it is making something up.</li>
+    <li><b>It follows instructions, but not like a program.</b> A prompt is a strong suggestion, not a guarantee. A cleverly worded user message can change its behavior.</li>
+    <li><b>Cost and speed depend on how much text goes in and out.</b> Longer prompts and longer answers cost more and take longer.</li>
+  </ul>
+  <p>The whole discipline of building agents is: take a component that is stateless, non-deterministic, sometimes wrong and persuadable, and build a system around it that is reliable, safe and measurable enough to put in front of a bank's customers.</p>
+
+  <h3>The loop is about ten lines</h3>
+  <pre><code>messages = history + [user_message]
+for step in range(MAX_STEPS):                       # a hard cap, so it cannot loop forever
+    reply = llm(system_prompt, messages, tools)     # 1. ask the model
+    if not reply.tool_calls:
+        return reply.text                           # 2. it answered: done
+    messages.append(reply)                          # 3. remember what it asked for
+    results = run_tools(reply.tool_calls)           # 4. YOUR code runs the tools (gates live here)
+    messages.append(results)                        # 5. give the results back, then loop
+return fallback_message                             # 6. ran out of steps</code></pre>
+  <p>That is the heart of every agent, in every framework. LangChain, LangGraph, the OpenAI Agents SDK, the Claude Agent SDK, and any company's internal platform all contain some version of this. They differ in features and ergonomics, not in the idea. If you understand these ten lines, you understand what all of them do.</p>
+  <div class="callout repo"><span class="lbl">In this repo</span>This is <code>Agent._loop</code> in <code>core/agent.py</code>. Our version is longer than ten lines because it adds timing, token counting, retries, timeouts and logging around the same skeleton.</div>
+
+  <h3>The iceberg: what is not in those ten lines</h3>
+  <div class="iceberg">
+    <div class="air"><b>The visible part: the loop</b><br><span style="color:var(--muted)">ask the model, run tools, repeat. A few hours to write, a day to understand.</span></div>
+    <div class="sea">
+      <b>The engineering below the waterline (this is where projects succeed or fail)</b>
+      <div class="row">
+        <div class="tile"><b>1. Tool design</b>Names, descriptions, schemas. The model can only use what you describe well.</div>
+        <div class="tile"><b>2. Gates in code</b>What the model is not allowed to do, enforced no matter what it says.</div>
+        <div class="tile"><b>3. State</b>The session. What survives between turns, and where it lives.</div>
+        <div class="tile"><b>4. Evals</b>Proof that it behaves correctly, and that a change did not break it.</div>
+        <div class="tile"><b>5. Observability</b>Seeing what it did and why, after the fact.</div>
+        <div class="tile"><b>6. Reliability</b>Timeouts, retries, fallbacks, latency, cost.</div>
+        <div class="tile"><b>7. Shipping</b>Canary, rollback, versioning prompt and model together.</div>
+        <div class="tile"><b>8. The business</b>The problem, the metric, the stakeholders, the integration.</div>
+      </div>
+    </div>
+  </div>
+  <p>The next tabs take these one by one. The first five are the core. Reliability and shipping are what turn a demo into something an enterprise will run. The last one, the business, is what makes the role "forward deployed" and not just "engineer".</p>
+
+  <h3>Eight questions to ask about any agent</h3>
+  <p>If you can answer these about any agent, yours or someone else's, you have the right mental model. They are also a good way to structure an answer in the interview.</p>
+  <ol>
+    <li><b>What can it do?</b> The tools, and how well each is described.</li>
+    <li><b>What must it never do, and where is that enforced?</b> In the prompt, or in code?</li>
+    <li><b>What does it remember, and where is it stored?</b></li>
+    <li><b>How do I know it works?</b> What are the tests and evals, and what do they miss?</li>
+    <li><b>How can I see what happened in a bad conversation?</b></li>
+    <li><b>What happens when something fails?</b> The model, a tool, the database, the network.</li>
+    <li><b>How does it get to production and back?</b> Rollout and rollback.</li>
+    <li><b>What number does the business care about, and did it move?</b></li>
+  </ol>
+
+  <h3>Three levels of "agent", and why to pick the simplest</h3>
+  <div class="tw"><table>
+    <tr><th>Level</th><th>Who decides the steps?</th><th>Example</th><th>When to use</th></tr>
+    <tr><td><b>Single model call</b></td><td>You (one call)</td><td>Classify an email, summarize a document, extract fields</td><td>Most tasks. Cheap, fast, easy to test.</td></tr>
+    <tr><td><b>Workflow</b></td><td>Your code (fixed sequence, branches in code)</td><td>Step 1 classify, step 2 look up the account, step 3 draft a reply</td><td>The steps are known in advance. More predictable than an agent.</td></tr>
+    <tr><td><b>Agent</b></td><td>The model (it chooses which tool next, and when to stop)</td><td>Customer-service chat where the next step depends on what the customer says</td><td>The path cannot be known in advance. Highest flexibility, hardest to make reliable.</td></tr>
+  </table></div>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"I start with the simplest thing that works. Many problems are a single call or a workflow. I use an agent when the next step genuinely depends on the conversation, and then I put the control back in code where it matters: gates, limits, state."</div>
+</section>
+
+<!-- =============== 2. LLM BASICS =============== -->
+<section data-tab="2. LLM fundamentals">
+  <h2>LLM fundamentals an AI engineer must know cold</h2>
+  <p class="lead">You do not need to know how a transformer works inside. You do need to know how the model behaves as a component: what it costs, how long it takes, how it fails.</p>
+
+  <h3>Tokens and the context window</h3>
+  <p>The model does not read characters or words. It reads <b>tokens</b>, small pieces of text. In English a token is roughly three quarters of a word. Everything you send and everything it answers is counted in tokens, and that count drives both cost and time.</p>
+  <p>The <b>context window</b> is the maximum number of tokens the model can look at in one call: the system prompt, all the messages, the tool descriptions, and its own answer together. Modern models have very large windows, but bigger context means slower and more expensive calls, and the model can lose track of details in a very long prompt. So "just put everything in" is not free.</p>
+
+  <h3>Statelessness and the message list</h3>
+  <p>Each call is independent. The conversation is a list of messages that <b>your code</b> keeps and resends every time. A message has a role: <code>user</code> (the customer), <code>assistant</code> (the model), and tool calls and results are carried inside those messages. The <b>system prompt</b> is a separate instruction at the top that sets the model's role and rules.</p>
+  <div class="callout repo"><span class="lbl">In this repo</span>The <code>Session</code> object holds the message list. <code>MemorySessionStore</code> keeps it between turns. On every turn the agent builds <code>history = [*session.messages, *new_messages]</code> and sends all of it.</div>
+
+  <h3>How tool calling really works</h3>
+  <p>This is the most important mechanism, and it is simpler than it sounds. The model never runs anything. It only writes text, and one kind of text it can write is "I would like to call this tool with these arguments".</p>
+  <ol>
+    <li>You send the model the tool descriptions: a name, a plain-language description, and a JSON schema for the arguments.</li>
+    <li>The model decides whether it needs a tool. If yes, it replies with a structured request, for example <code>{"name": "get_portfolio", "arguments": {}}</code>, and stops.</li>
+    <li><b>Your code</b> receives that request. Your code decides whether to run it, runs it, and captures the result.</li>
+    <li>You append the request and the result to the message list and call the model again.</li>
+    <li>The model reads the result and either asks for another tool or writes the final answer.</li>
+  </ol>
+  <pre><code>assistant: tool_call  get_portfolio {}
+user:      tool_result {"holdings": [...], "total_value_nis": 125400.0}
+assistant: "Your total balance is 125,400 NIS ..."</code></pre>
+  <p>The key insight for safety: <b>between the model's request and the execution, there is your code.</b> That gap is where every gate, check and log lives. The model proposes. Your code decides.</p>
+
+  <h3>Non-determinism and sampling</h3>
+  <p>The model picks each next token from a probability distribution. That is why the same prompt can give different answers. Some models let you tune randomness (a setting called temperature), while newer ones fix it. Either way, design as if the output will vary: test many times, and do not write tests that expect one exact sentence.</p>
+
+  <h3>Hallucination and grounding</h3>
+  <p>A hallucination is when the model states something that is not true, in a confident tone. In a bank this is not a quality issue, it is a risk issue. The defense is <b>grounding</b>: the model should only state facts that came from a tool result or a retrieved document in this conversation. You enforce this with three layers: the prompt says never invent data, the tools return explicit errors instead of empty results, and the evals check that answers are supported by the tool output.</p>
+  <div class="callout repo"><span class="lbl">In this repo</span>Rule 1 in <code>domain/system_prompt.md</code>, the <code>internal_error</code> result that says "Do not guess the data", the <code>backend_down</code> eval case, and the groundedness judge in <code>evals/judges.py</code>.</div>
+
+  <h3>Prompt injection</h3>
+  <p>Anything the model reads can contain instructions: the customer's message, a document you retrieved, a tool result, an email body. The model cannot reliably tell "instructions from my operator" from "text that happens to contain instructions". This is called <b>prompt injection</b> and it is listed first in the OWASP top ten for LLM applications.</p>
+  <p>The practical rule: <b>never rely on the prompt alone to protect anything that matters.</b> Assume the model can be tricked, and make sure that a tricked model still cannot do harm, because the dangerous capability is simply not available to it.</p>
+
+  <h3>Cost and latency: what drives each</h3>
+  <ul>
+    <li><b>Input tokens</b> are cheap per token, but a chat re-sends everything each turn, and an agent calls the model several times per turn.</li>
+    <li><b>Output tokens</b> cost more per token and are slow, because the model writes one token at a time. Long answers are the main source of delay.</li>
+    <li><b>Time to first token</b> is how long until the answer starts. For voice this matters most, because the speech can start before the answer is finished (streaming).</li>
+    <li><b>The number of round trips</b> matters: each tool step is another model call. A turn with two tool steps is three model calls.</li>
+  </ul>
+  <h4>Real numbers from this project</h4>
+  <div class="kv">
+    <div><span>One turn: verify + balance</span><b>~4.3 s</b></div>
+    <div><span>Model calls in that turn</span><b>3</b></div>
+    <div><span>Input tokens (all 3 calls)</span><b>~6,300</b></div>
+    <div><span>Time in tools</span><b>~36 ms</b></div>
+    <div><span>Repeated prefix (tools + prompt)</span><b>~2,000 tok</b></div>
+  </div>
+  <p>The lesson in those numbers: the tools took 36 milliseconds and the model took over four seconds. In an agent, <b>the model is almost always the slow part</b>, so latency work is mostly about making fewer or smaller model calls, not about faster databases.</p>
+
+  <h3>Prompt caching</h3>
+  <p>Most of the input in each call is identical to the previous call: the tool descriptions and the system prompt. Prompt caching lets the provider remember that repeated beginning so you pay a small fraction for it and the call starts faster. We measured it in this project: the first call wrote about 1,959 tokens to the cache, and the identical second call read all 1,959 from the cache and was billed for only 4 new input tokens.</p>
+  <div class="callout warn"><span class="lbl">Careful</span>Caching only works on a stable beginning. If you put the current time or a random id at the top of the prompt, every call is different and the cache never hits. Keep stable content first, changing content last. The cache also expires after a few minutes of silence.</div>
+
+  <h3>Choosing a model</h3>
+  <p>Bigger models reason better and follow complex rules better, but they are slower and cost more. Smaller models are fast and cheap and fine for simple work like routing or classification. A common production pattern is to use a small model for easy steps and a large one only where needed. The way to decide is not opinion but <b>evals</b>: run the same test set on both and compare pass rate, latency and cost.</p>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"I chose a mid-size model as a default for reliability on tool calling and policy following, and I made it a config setting. I would decide the final choice with the eval results, including whether a smaller model passes the same cases. I have not run that comparison yet."</div>
+</section>
+
+<!-- =============== 3. LOOP & PATTERNS =============== -->
+<section data-tab="3. The loop and frameworks">
+  <h2>The loop, its variations, and frameworks</h2>
+  <p class="lead">Knowing the loop lets you read any framework quickly: you are looking for where it stores messages, how it describes tools, where it runs them, and how it stops.</p>
+
+  <h3>Anatomy of one turn</h3>
+  <div class="flowline">
+    <span class="box">Customer message</span><span class="arr">→</span>
+    <span class="box code">Load session</span><span class="arr">→</span>
+    <span class="box llm">Model call</span><span class="arr">→</span>
+    <span class="box code">Run tools (gated)</span><span class="arr">→</span>
+    <span class="box llm">Model call</span><span class="arr">→</span>
+    <span class="box code">Output check</span><span class="arr">→</span>
+    <span class="box code">Save + log</span><span class="arr">→</span>
+    <span class="box">Reply</span>
+  </div>
+  <p>Purple boxes are the model, green boxes are your code. Notice that your code surrounds the model on both sides. That is the shape of every production agent.</p>
+
+  <h3>Termination: how a loop ends</h3>
+  <ul>
+    <li><b>The model answers</b> with text and no tool request. The normal ending.</li>
+    <li><b>A step limit.</b> A model can get stuck calling tools repeatedly. A hard cap (6 in this project) stops it and returns a safe fallback message.</li>
+    <li><b>A failure.</b> The model call times out twice, so you return a fallback and keep the state consistent.</li>
+    <li><b>A handoff.</b> The agent decides it cannot help and escalates to a human. After that, the session is closed to the model.</li>
+  </ul>
+
+  <h3>Parallel tool calls</h3>
+  <p>A model can ask for several tools in one reply, for example both balance and recent transactions. If they do not depend on each other, run them at the same time. With async code this is one line (<code>asyncio.gather</code>), and it cuts the time to the slowest tool instead of the sum. We have a test that proves two 150 ms tools finish in about 150 ms and not 300.</p>
+
+  <h3>Workflows versus agents, with a bank example</h3>
+  <p>Suppose the task is "answer a customer's balance question".</p>
+  <ul>
+    <li><b>As a workflow:</b> code asks for identity, calls the balance API, passes the number to the model with "phrase this politely". Very predictable, but it cannot handle "actually, also show my last transaction and open a withdrawal".</li>
+    <li><b>As an agent:</b> the model decides which tools to call in which order, adapting to the conversation. Flexible, but you now need gates, limits and evals to keep it safe.</li>
+  </ul>
+  <p>Real systems are often a hybrid: a workflow for the parts that must be rigid (identity check, payment steps) and an agent for the open-ended parts. Knowing when to make a step rigid is a core skill.</p>
+
+  <h3>Other patterns you will hear about</h3>
+  <div class="grid g2">
+    <div class="card"><h4 style="margin-top:0">RAG (retrieval-augmented generation)</h4><p>Before answering, search a knowledge base and give the model the relevant text. It reduces hallucination on company-specific facts. In this project it is a tool (<code>search_knowledge</code>) over six documents using BM25 keyword search.</p><p><b>BM25 vs embeddings:</b> BM25 matches words, is deterministic, needs no extra service, and is easy to explain, but misses synonyms. Embeddings match meaning, and need a model and an index. Start simple, move up when the corpus is large or users phrase things differently.</p></div>
+    <div class="card"><h4 style="margin-top:0">MCP (Model Context Protocol)</h4><p>A standard way to expose tools and data to a model, so one connector can serve many agents. In an enterprise it is one way to wrap a legacy system once and reuse it. You do not need it for a first build, but you should be able to say what it is and where it would fit: behind the repository interface.</p></div>
+    <div class="card"><h4 style="margin-top:0">Multi-agent</h4><p>Several model-driven agents, for example a planner and workers. It sounds powerful and adds a lot: more cost, more failure modes, harder debugging. Default to one agent with good tools. Add more only when one agent's context is overloaded or tasks are truly independent.</p></div>
+    <div class="card"><h4 style="margin-top:0">Human in the loop</h4><p>A person approves or takes over at defined points: before a payment, when confidence is low, when the customer asks. Escalation is not a failure, it is a designed path. In regulated industries it is often required.</p></div>
+  </div>
+
+  <h3>Frameworks: what they give you and what they cost</h3>
+  <div class="tw"><table>
+    <tr><th>Option</th><th>What it gives</th><th>What it costs</th></tr>
+    <tr><td>Hand-written loop (this project)</td><td>Total clarity and control. Easy to test and to put gates anywhere.</td><td>You build retries, tool dispatch, tracing yourself.</td></tr>
+    <tr><td>Frameworks and SDKs (LangChain/LangGraph, OpenAI Agents SDK, Claude Agent SDK, Pydantic AI, LlamaIndex)</td><td>Ready-made loop, tool helpers, sometimes memory, tracing and multi-agent patterns.</td><td>Abstractions can hide what is sent to the model. Version churn. You still must add your own gates and evals.</td></tr>
+    <tr><td>A company's own platform</td><td>The loop, deployment, channels (voice, chat, email), monitoring already exist.</td><td>You work within its model: configuring and extending rather than inventing.</td></tr>
+  </table></div>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"The loop is small. I wrote it by hand so the gates, the state and the observability around it are explicit and testable, and so I can explain every line. In a real team I would use whatever framework or platform they have, with the same boundaries: tools, gates, state, evals, observability."</div>
+  <div class="callout warn"><span class="lbl">Be honest in the interview</span>You know what you built. You do not know the internals of the company's platform. Say that. Then say how you would find out: which parts are configurable, how tools are registered, how it is tested and deployed.</div>
+</section>
+
+<!-- =============== 4. TOOL DESIGN =============== -->
+<section data-tab="4. Tool design">
+  <h2>Pillar 1: Tool design</h2>
+  <p class="lead">The model can only use a tool well if it understands what the tool is for. Tool design is closer to writing an API for a very literal, very fast junior colleague than to normal API design.</p>
+
+  <h3>Why it matters so much</h3>
+  <p>The model picks tools based on only two things: the <b>name and description</b> you wrote, and the <b>schema</b> of the arguments. If two tools sound alike, it will mix them up. If a description is vague, it will call the tool at the wrong time. Most "the agent is dumb" problems are actually "my tool description was unclear" problems.</p>
+
+  <h3>Principles</h3>
+  <div class="grid g2">
+    <div class="card"><h4 style="margin-top:0">1. Clear names that say what happens</h4><p><code>get_portfolio</code>, <code>request_withdrawal</code>, <code>escalate_to_human</code>. A verb and an object. Avoid names like <code>process</code> or <code>handle_request</code>.</p></div>
+    <div class="card"><h4 style="margin-top:0">2. Descriptions that say when to use it, and when not to</h4><p>Write for a reader who knows nothing. Include what it returns, what it does not do, and any precondition. Our <code>request_withdrawal</code> description says the first call only proposes and the second executes.</p></div>
+    <div class="card"><h4 style="margin-top:0">3. Few tools, each with one job</h4><p>Seven tools here. Each extra tool is more for the model to confuse. Prefer a small set of well-named tools over a long list. If you must have many, group or search them.</p></div>
+    <div class="card"><h4 style="margin-top:0">4. Strict, typed arguments</h4><p>Use a schema with types, ranges and patterns (phone digits must be exactly four digits, amount must be positive). Validate every call in code, because the model will sometimes send nonsense.</p></div>
+    <div class="card"><h4 style="margin-top:0">5. Do not ask the model for what you already know</h4><p>No tool takes a customer id. The code already knows who is verified. Every argument you remove is one less thing the model can get wrong or be tricked into.</p></div>
+    <div class="card"><h4 style="margin-top:0">6. Return small, useful results</h4><p>Return only what the model needs, not whole database rows. Large results cost tokens and distract the model. Return explicit "not found" or "error" results, never silent empties.</p></div>
+  </div>
+
+  <h3>Errors are part of the interface</h3>
+  <p>When a tool fails, the error message is the next thing the model reads, so it should <b>tell the model what to do</b>. Compare:</p>
+  <pre><code>Bad:   {"error": "500"}
+Good:  {"error": {"code": "insufficient_balance",
+                   "message": "The amount exceeds the balance of 125400 NIS."}}
+Safe:  {"error": {"code": "internal_error",
+                   "message": "The tool failed. Do not guess the data."}}</code></pre>
+  <p>The third one is deliberately vague about the cause: internals should not leak to the model or the customer, but the instruction "do not guess" prevents the most dangerous reaction, which is making up a number.</p>
+
+  <h3>Read tools, write tools, and idempotency</h3>
+  <ul>
+    <li><b>Read tools</b> only look. If called wrongly, little harm. You can retry them freely.</li>
+    <li><b>Write tools</b> change something in the world. They need extra care: confirmation, an audit trail, and an <b>idempotency key</b>.</li>
+    <li><b>Idempotent</b> means doing it twice has the same effect as doing it once. If a withdrawal request times out and is retried, you must not create two. A unique key stored with the request makes the second attempt return the first result.</li>
+  </ul>
+
+  <h3>How to test a tool description</h3>
+  <p>Write the eval cases first: "what's my balance" should call <code>get_portfolio</code>; "should I buy" should call nothing. Run them. If the model picks the wrong tool, change the description or rename the tool, then run again. Treat descriptions like code: they are changed, tested and reviewed.</p>
+
+  <div class="callout trap"><span class="lbl">Common mistakes</span>
+    <ul style="margin:4px 0 0">
+      <li>Giving the model a general-purpose "run SQL" or "call any API" tool. It is powerful and nearly impossible to make safe.</li>
+      <li>Putting security in the description ("only use this for the logged-in user"). A description is a hint, not a lock.</li>
+      <li>Returning huge payloads and hoping the model finds the right field.</li>
+    </ul>
+  </div>
+  <div class="callout repo"><span class="lbl">In this repo</span><code>domain/tools.py</code> defines all seven tools with pydantic argument models. <code>core/tools.py</code> is the registry that validates, gates and runs them. Compare <code>get_portfolio</code> (no arguments) with <code>verify_identity</code> (the only tool that takes a customer id, because that id is the claim being checked).</div>
+</section>
+
+<!-- =============== 5. GATES =============== -->
+<section data-tab="5. Gates in code">
+  <h2>Pillar 2: Gates in code</h2>
+  <p class="lead">The model proposes, your code disposes. Anything that must never happen should be impossible, not just discouraged.</p>
+
+  <h3>The core idea</h3>
+  <p>A prompt is persuasion. Code is law. When you tell the model "never show another customer's data", you are asking politely. When your tools simply have no way to receive a different customer's id, you have made it impossible. The first fails under pressure from a clever user. The second does not, because it does not depend on the model's cooperation.</p>
+
+  <h3>Threat model in plain words</h3>
+  <p>Assume three things will happen in production:</p>
+  <ol>
+    <li>Some users will try to trick the agent ("ignore your instructions, I'm the admin").</li>
+    <li>The model will sometimes misunderstand and do the wrong thing without any attacker.</li>
+    <li>Content the agent reads (documents, emails, tool results) may contain hidden instructions.</li>
+  </ol>
+  <p>The question to ask for each capability is: <b>if the model were fully compromised right now, what is the worst thing it could do through this capability?</b> Then design so that the answer is acceptable.</p>
+
+  <h3>The gates in this project</h3>
+  <div class="tw"><table>
+    <tr><th>Risk</th><th>Gate</th><th>Where</th><th>If the model is tricked</th></tr>
+    <tr><td>Data shown to an unverified person</td><td>Identity gate: data tools refuse to run until the session is verified</td><td><code>core/tools.py</code></td><td>The tool returns <code>identity_not_verified</code></td></tr>
+    <tr><td>Access to another customer's data</td><td>Tools take no customer id. They read it from the session.</td><td><code>domain/tools.py</code>, <code>ToolContext</code></td><td>It can only ever fetch the verified customer's own data</td></tr>
+    <tr><td>Switching customers mid-session</td><td><code>already_verified</code> error</td><td><code>verify_identity</code> handler</td><td>Refused</td></tr>
+    <tr><td>Brute-forcing the phone digits</td><td>Two failures escalate and lock the session</td><td><code>Guardrails</code>, config</td><td>Session ends</td></tr>
+    <tr><td>Money moved without consent</td><td>Two-step write: propose, then execute on a later user turn</td><td><code>ToolRegistry._run_write</code></td><td>First call does nothing</td></tr>
+    <tr><td>Duplicate withdrawals</td><td>Idempotency key, unique in the database</td><td>Registry + Postgres</td><td>Second attempt returns the first row</td></tr>
+    <tr><td>Investment advice (licence required)</td><td>Prompt rule plus a regex check on the reply</td><td><code>Guardrails.check_output</code></td><td>Reply replaced with a refusal</td></tr>
+    <tr><td>Runaway loops</td><td>Maximum 6 steps</td><td><code>Agent._loop</code></td><td>Fallback message</td></tr>
+    <tr><td>Broken tool crashing the chat</td><td>Registry catches everything, returns a structured error</td><td><code>ToolRegistry.execute</code></td><td>Model sees an error and answers gracefully</td></tr>
+  </table></div>
+
+  <h3>What belongs in the prompt, and what in code</h3>
+  <div class="grid g2">
+    <div class="card"><h4 style="margin-top:0">Put in the prompt</h4><ul><li>Tone, language, style.</li><li>Judgment calls: is this advice? is this out of scope?</li><li>When to use which tool.</li><li>What to say when refusing.</li></ul><p>Things that need understanding of meaning, where a rule cannot decide.</p></div>
+    <div class="card"><h4 style="margin-top:0">Put in code</h4><ul><li>Who may see what.</li><li>What may be changed, and after what confirmation.</li><li>Limits (steps, time, amounts).</li><li>Anything with legal, financial or safety consequences.</li></ul><p>Things that must hold every time, even when the model is wrong.</p></div>
+  </div>
+  <p>Good designs use both. The prompt makes the common case smooth, and the code catches the rare failure. The regex check for investment advice is a good example of the combination: the prompt does 95 percent of the work, and the regex is a cheap safety net for the rest. It is intentionally coarse, and the evals measure what it misses.</p>
+
+  <h3>Honest limits of our gates</h3>
+  <ul>
+    <li>"Customer id plus last four phone digits" is a weak identity factor. Real systems use the client's login or a one-time code.</li>
+    <li>The confirmation gate proves that a user turn happened between proposal and action, not that the user said yes. The prompt asks for a clear yes and an eval checks the flow. For real money you confirm out of band, with a button or a code.</li>
+    <li>The lockout counts failures per session, so someone could start new sessions. Production needs per-customer rate limits.</li>
+  </ul>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"I separate what needs judgment from what must be guaranteed. Judgment goes in the prompt. Guarantees go in code, and I design so that a fully fooled model still cannot reach another customer's data or move money without a confirmation."</div>
+  <div class="callout trap"><span class="lbl">The wrong answer</span>"I told the model in the system prompt not to do that." Interviewers hear this as: the safety depends on the model behaving.</div>
+</section>
+
+<!-- =============== 6. STATE =============== -->
+<section data-tab="6. State and memory">
+  <h2>Pillar 3: State and memory</h2>
+  <p class="lead">Because the model is stateless, "what the agent knows" is whatever your code stores and resends. Deciding what to store, where, and for how long is a core design task.</p>
+
+  <h3>Two kinds of state</h3>
+  <div class="grid g2">
+    <div class="card"><h4 style="margin-top:0">Conversation history</h4><p>The list of messages, including tool calls and results. It is what lets the model say "as I told you" and "the withdrawal we just discussed". It grows with every turn.</p></div>
+    <div class="card"><h4 style="margin-top:0">Control state</h4><p>Facts your <b>code</b> needs, separate from what the model says: is the customer verified, how many failed attempts, is there a pending write, has the session been escalated. This state drives the gates.</p></div>
+  </div>
+  <div class="callout"><b>Why separate them?</b> The model can be wrong about the conversation, but the code cannot be wrong about "is this customer verified". Never infer security state from the chat text. Keep it in explicit fields, set only by your code.</div>
+
+  <h3>What is in the session here</h3>
+  <pre><code>Session
+  id, messages[]            # the conversation
+  turn                      # a counter, used by the confirmation gate
+  verified_customer_id      # set only by verify_identity
+  failed_verifications      # for lockout
+  pending_action            # a proposed write + idempotency key + the turn it was proposed
+  handoff                   # set when escalated</code></pre>
+
+  <h3>Where state lives: the stateless API</h3>
+  <p>Your API servers should be <b>stateless</b>: they keep nothing between requests. All state goes in a store the servers share. This is what lets you run several copies behind a load balancer, restart them freely, and deploy new versions without losing conversations.</p>
+  <ul>
+    <li><b>In memory</b> (our <code>MemorySessionStore</code>): fine for demos and tests. Lost on restart, not shared between copies.</li>
+    <li><b>Redis</b>: fast shared store with expiry. The usual choice for sessions.</li>
+    <li><b>A database</b>: when you need history for audit, analytics or long-lived conversations.</li>
+  </ul>
+  <p>The code reaches the store only through an interface, so moving from memory to Redis changes one line in <code>container.py</code>.</p>
+
+  <h3>The growing history problem</h3>
+  <p>Every turn adds messages, and every model call re-sends them all. A long conversation becomes slow and expensive, and eventually exceeds the context window. Options, from simplest:</p>
+  <ol>
+    <li><b>Do nothing</b> for short conversations. Most customer-service chats are short.</li>
+    <li><b>Truncate</b> old messages. Cheap, but may drop important facts.</li>
+    <li><b>Summarize</b> older turns into a short note. Keeps facts, costs one extra call.</li>
+    <li><b>Keep important facts in control state</b> (verified id, pending action) so they never depend on old messages being present.</li>
+    <li><b>Clear old tool results</b> that are no longer needed, since large results are the main bloat.</li>
+  </ol>
+
+  <h3>Short-term versus long-term memory</h3>
+  <p>Everything above is short-term, within one conversation. <b>Long-term memory</b> means remembering across conversations (a customer's preferences, a past issue). It is a separate feature with serious privacy implications, especially in regulated industries: what may you store, for how long, and who can see it? Do not add it casually. For this project, the honest statement is: no long-term memory, by design.</p>
+
+  <h3>Concurrency and consistency</h3>
+  <p>If two requests for the same session arrive at the same time (a double click, a retry), they can read the same state and overwrite each other. Our in-memory version does not guard against it. In production, use a per-session lock or an atomic update in Redis. It is a known gap, written down in <code>PRODUCTION.md</code>.</p>
+
+  <h3>What happens to state when the model call fails?</h3>
+  <p>A decision we made on purpose: if the model fails mid-turn, we keep the <b>control state</b> (the customer stays verified) but drop the <b>half-finished messages</b>. A tool call without its result is an invalid history for the provider and would break every later request. The cost: in a rare case, a write that already executed has no record in the chat, so the customer may be asked again.</p>
+  <div class="callout repo"><span class="lbl">In this repo</span><code>core/session.py</code> (the state), <code>adapters/memory_session_store.py</code> (the store), <code>core/agent.py</code> lines around <code>if reply is None</code> (the failure behavior).</div>
+</section>
+
+<!-- =============== 7. EVALS =============== -->
+<section data-tab="7. Evals">
+  <h2>Pillar 4: Evals</h2>
+  <p class="lead">An eval is a repeatable test that tells you whether the agent behaves correctly. Without evals, every prompt change is a gamble, and "it seems to work" is the only evidence you have.</p>
+
+  <div class="callout warn"><span class="lbl">Interview warning from your own notes</span>Your notes say a previous candidate was rejected for gaps in evaluation and deployment. Evals are the part to be most prepared on, and most honest about.</div>
+
+  <h3>Why agents need a different kind of testing</h3>
+  <p>A normal function has one right answer, so you assert equality. An agent's output is free text that can be phrased many ways, may call different tools in a valid order, and varies run to run. So you cannot assert one exact string. You assert <b>properties</b>: the right tool was called, the number in the answer is correct, no forbidden tool was called, the escalation flag is set.</p>
+
+  <h3>The test pyramid for an agent</h3>
+  <div class="tw"><table>
+    <tr><th>Level</th><th>What it checks</th><th>Uses the real model?</th><th>In this repo</th></tr>
+    <tr><td>Unit tests</td><td>Your code: loop control flow, gates, tools, guardrails, parsing</td><td>No. A scripted fake model.</td><td>76 tests in <code>tests/</code> (4 need Postgres)</td></tr>
+    <tr><td>Scenario evals</td><td>The whole agent behaves on realistic conversations</td><td>Yes</td><td>20 cases in <code>domain/eval_cases.yaml</code></td></tr>
+    <tr><td>LLM-as-judge</td><td>Fuzzy qualities like "is the answer supported by the data"</td><td>Yes (a second call)</td><td><code>evals/judges.py</code></td></tr>
+    <tr><td>Online monitoring</td><td>Real traffic: escalation rate, complaints, sampled reviews</td><td>Production</td><td>Documented, not built</td></tr>
+  </table></div>
+  <p>The fake model is what makes the bottom level fast and free: you can test "what happens if the model asks for a tool that does not exist" or "the model fails twice" without any real model. The top levels are slower and cost money, so they run less often.</p>
+
+  <h3>Building a good eval set</h3>
+  <ol>
+    <li><b>Start from the requirements and the risks</b>, not from what is easy to test. Each requirement ("refuse investment advice") becomes at least one case.</li>
+    <li><b>Cover categories</b>: happy path, knowledge questions, identity gate, write actions, refusals, escalation, out-of-scope, injection, multi-turn, tool failure. Our 20 cases span 10 categories.</li>
+    <li><b>Use distinctive data</b> so wrong answers are easy to detect. C007 has a balance of 987,654 so any leak is obvious.</li>
+    <li><b>Prefer deterministic checks</b> (a tool was called, a number appears, a flag is set). They are cheap, stable and explainable.</li>
+    <li><b>Use a judge only for what you cannot check mechanically</b>, with a fixed written rubric.</li>
+    <li><b>Grow it from real failures.</b> Every bad production conversation becomes a new case. This is how the set stays relevant.</li>
+  </ol>
+
+  <h3>Judging with a model: use with care</h3>
+  <p>An LLM judge reads the answer and the evidence and says whether the answer is supported. It is useful and also unreliable in specific ways you should be able to name:</p>
+  <ul>
+    <li><b>It shares blind spots</b> with the model being judged if it is the same model. Use a different model as judge in production.</li>
+    <li><b>It can be lenient or inconsistent.</b> Give it a strict rubric, ask for a reason, and spot-check its verdicts by hand.</li>
+    <li><b>It costs money and adds variance.</b> Use it only where needed.</li>
+  </ul>
+
+  <h3>The metrics that matter</h3>
+  <ul>
+    <li><b>Pass rate per category</b>, not only overall. "95 percent overall" can hide "0 percent on injection".</li>
+    <li><b>Safety categories must be near 100 percent</b> and are release blockers. Style categories can tolerate some misses.</li>
+    <li><b>Latency</b>: average and p95 (the time that 95 percent of turns beat). Averages hide the slow tail.</li>
+    <li><b>Flakiness</b>: run each case several times. A case that passes 3 of 5 times is a finding, not a pass.</li>
+    <li><b>Cost</b> per conversation.</li>
+  </ul>
+
+  <h3>Evals as a release gate</h3>
+  <p>Run the eval set automatically on every change to the prompt, model, tools or config, before release. Block the release if safety cases fail or the overall rate drops against the baseline. This is the same idea as CI for normal code, applied to behavior.</p>
+
+  <h3>Common pitfalls</h3>
+  <div class="callout trap">
+    <ul style="margin:0">
+      <li><b>Overfitting to the evals.</b> If you tune the prompt until all 20 pass, you may have taught it those 20. Keep some cases hidden, and keep adding new ones.</li>
+      <li><b>Brittle regexes.</b> A correct answer written as "125.4K" fails a check for "125,400". Read failures before trusting them.</li>
+      <li><b>Testing only the happy path.</b> The value is in the adversarial and failure cases.</li>
+      <li><b>One run.</b> Model variance means one run proves little.</li>
+    </ul>
+  </div>
+
+  <h3>Where this project honestly stands</h3>
+  <p>The machinery is built and unit-tested: 20 cases, the runner, the deterministic checks, the judge with its rubric, and the report with per-category and p95 numbers. <b>The full live eval has not been run yet.</b> The documentation says so, and <code>EVALS.md</code> lists known weaknesses (regex brittleness, same-model judge, 20 cases, one run). Say this plainly in the interview, and say what you would do first: run it, read every failure, fix the top ones, and rerun several times.</p>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"I treat evals as the spec of the behavior. The deterministic checks gate the release, the judge covers what regexes cannot, and every production failure becomes a regression case. I know the limits: the judge is biased, regexes are brittle, and the set is small, so I would grow it and run each case multiple times."</div>
+</section>
+
+<!-- =============== 8. OBSERVABILITY =============== -->
+<section data-tab="8. Observability">
+  <h2>Pillar 5: Observability</h2>
+  <p class="lead">When a customer says "the agent told me something wrong", you must be able to reconstruct exactly what happened. If you cannot, you cannot fix it, and a regulated client will not accept it.</p>
+
+  <h3>The question observability answers</h3>
+  <p>For any single conversation, you should be able to answer: what did the model see, what did it decide, which tools ran with what inputs and outputs, how long did each step take, what did it cost, and why did it end the way it did? Three kinds of signals give you this.</p>
+  <div class="grid g3">
+    <div class="card"><h4 style="margin-top:0">Logs</h4><p>Discrete events with details. "tool_call get_portfolio took 3 ms". Good for finding one specific thing.</p></div>
+    <div class="card"><h4 style="margin-top:0">Traces</h4><p>A timeline of one request with nested steps: turn, then model call, then tool call, then model call. Good for "where did the time go".</p></div>
+    <div class="card"><h4 style="margin-top:0">Metrics</h4><p>Numbers over time: requests per minute, error rate, p95 latency, cost per hour. Good for dashboards and alerts.</p></div>
+  </div>
+
+  <h3>What this project logs</h3>
+  <ul>
+    <li><b>A summary line per turn</b>: tools used, tool errors, total / model / tool time, tokens, escalated, failed, policy violation.</li>
+    <li><b>An event per tool call</b>: name, milliseconds, whether it errored, the error code.</li>
+    <li><b>Model usage</b>: uncached input, cache write, cache read, output tokens.</li>
+    <li><b>Failures with a full traceback</b>: retries, tool exceptions, the final model failure.</li>
+    <li><b>Identifiers on every line</b>: a correlation id per request and the session id, so you can pull the whole story with one search.</li>
+    <li>File, line and function of the code that logged, so you can jump to the source.</li>
+  </ul>
+  <div class="callout repo"><span class="lbl">In this repo</span><code>core/logging.py</code> (two formats: readable console for development, JSON for log systems), and the <code>log_event</code> calls in <code>core/agent.py</code> and <code>core/tools.py</code>.</div>
+
+  <h3>What you must not log</h3>
+  <p>Message text, account numbers and balances are personal data. We do not put message contents in logs. That means debugging content needs a controlled transcript store with access control and retention rules, or a debugger on a test environment. In a bank, "we logged the customer's balance in plain text" is a serious incident.</p>
+
+  <h3>Why you log errors with tracebacks</h3>
+  <p>The tool registry converts every exception into a clean error result for the model. That is good for the conversation and bad for debugging, because the original cause disappears. So each place that catches an exception also logs it with the stack trace. The model and customer see a safe generic message, and the engineer sees the real cause.</p>
+
+  <h3>Production observability: what you would add</h3>
+  <ul>
+    <li><b>Distributed tracing</b> (OpenTelemetry): one trace per turn, a span for each model call and each tool call, with attributes like model name, token counts, cache hits, tool name and error code. Viewed in an observability tool built for LLM applications.</li>
+    <li><b>Dashboards</b>: latency percentiles, tool error rate, escalation rate and reasons, fallback rate, cost per conversation.</li>
+    <li><b>Alerts</b> tied to rollback criteria: error rate or latency up, escalation spike, any sign of data exposure.</li>
+    <li><b>Sampled review</b>: humans read a sample of conversations each week, plus every escalation and complaint.</li>
+    <li><b>Replay</b>: the ability to re-run a recorded conversation against a new version to see if the behavior changed.</li>
+  </ul>
+
+  <h3>A debugging story to be able to tell</h3>
+  <p>While building the dev cache we noticed that three identical-looking messages were still charged. The logs showed the same session id on all three and a cache miss on each. The reason: the cache key includes the whole conversation history, and the chat page keeps the session, so each repeat was a longer conversation and so a different key. Starting a new conversation fixed it. The point of the story: <b>the logs answered a question that guessing would not have</b>.</p>
+  <div class="callout say"><span class="lbl">Good thing to say</span>"I made the agent observable first, because everything else depends on it. One summary per turn, an event per tool, usage and cache numbers, identifiers on every line, and tracebacks where exceptions are converted. In production I would add OpenTelemetry traces and an LLM observability tool."</div>
+</section>
+
+<!-- =============== 9. RELIABILITY =============== -->
+<section data-tab="9. Reliability and latency">
+  <h2>Reliability, latency and cost</h2>
+  <p class="lead">A demo works once. A product works when the network is slow, the database is down, the model is overloaded, and a thousand people are chatting at the same time.</p>
+
+  <h3>Everything external will fail</h3>
+  <p>In this system four things can fail: the model API, a tool, the database or client system, and your own code. For each, decide in advance what the customer sees and what state is left behind.</p>
+  <div class="tw"><table>
+    <tr><th>Failure</th><th>Technique</th><th>Here</th></tr>
+    <tr><td>Slow or hanging call</td><td><b>Timeout</b> on every external call</td><td>30 s for the model, 10 s for tools</td></tr>
+    <tr><td>Temporary error</td><td><b>Retry with backoff</b>: wait a little, double the wait each time, give up after a few tries</td><td>One retry; 0.5 s then 1 s</td></tr>
+    <tr><td>Still failing</td><td><b>Graceful fallback</b>: a safe message, not a crash or a made-up answer</td><td><code>FALLBACK_REPLY</code></td></tr>
+    <tr><td>A retried write</td><td><b>Idempotency</b> so it cannot happen twice</td><td>Unique key on the request</td></tr>
+    <tr><td>A broken tool</td><td><b>Isolation</b>: one tool's bug must not crash the conversation</td><td>Registry catches everything</td></tr>
+    <tr><td>Overload / rate limit</td><td>Backoff, queues, rate limiting, a fallback model</td><td>Documented, not built</td></tr>
+    <tr><td>Endless loop</td><td><b>Step limit</b></td><td>Maximum 6</td></tr>
+  </table></div>
+  <p>One subtlety worth knowing: retries can make things worse. If a service is overloaded, many clients retrying at once make it fall over harder. That is why backoff (waiting longer each time, ideally with a little randomness) and a small retry count matter. Also only retry things that are safe to repeat, which is another reason for idempotency.</p>
+
+  <h3>Latency: where the time goes</h3>
+  <p>We saw that a turn took about 4 seconds and the tools took 36 milliseconds. That tells you where to work.</p>
+  <ul>
+    <li><b>Fewer model round trips.</b> Each tool step is another call. Combine steps where safe, run independent tools in parallel, and consider prefetching data you will almost certainly need.</li>
+    <li><b>Smaller prompts.</b> Fewer tokens in means faster and cheaper. Trim tool results and old history.</li>
+    <li><b>Prompt caching.</b> The repeated prefix is read from cache, which reduces cost and the time to first token.</li>
+    <li><b>A faster model for easy steps.</b> Route simple intents to a small model.</li>
+    <li><b>Shorter answers.</b> Output tokens are the slowest part. Ask for concise replies.</li>
+    <li><b>Streaming.</b> Start showing or speaking the answer before it is complete. This does not make the total shorter but makes it feel much faster.</li>
+  </ul>
+
+  <h3>Voice is different</h3>
+  <p>The company you are interviewing with builds voice, chat and email agents, so voice questions are likely. Voice changes the constraints a lot:</p>
+  <ul>
+    <li><b>Silence is very noticeable.</b> In conversation, people feel a pause of more than about a second. A text chat can take four seconds without annoying anyone. A phone call cannot. Treat this as a rule of thumb and confirm the actual target with the client.</li>
+    <li><b>Streaming is essential</b>: the speech engine starts talking as soon as the first sentence is ready.</li>
+    <li><b>Filler phrases</b> ("let me check that") can cover a slow tool call, but they are a patch, not a fix.</li>
+    <li><b>Prefetch</b> the customer's data as soon as they are identified, so most questions need no database trip during the call.</li>
+    <li><b>Database calls count.</b> A slow lookup in the middle of a voice turn is felt directly. Index lookup keys, pool connections, cache hot data, set tight timeouts.</li>
+    <li><b>Interruptions and speech recognition errors</b> make inputs messier than typed text: names, numbers and digits are often misheard. Confirm important values back to the caller.</li>
+  </ul>
+  <p>Note that in a real deployment the agent often does not own the database. It calls the client's systems through APIs, which may be slow or unreliable. That makes caching and prefetching more important than tuning queries.</p>
+
+  <h3>Cost as a design constraint</h3>
+  <ul>
+    <li>Cost per conversation = (input tokens x input price) + (output tokens x output price) x number of model calls. An agent multiplies the cost of a single call.</li>
+    <li>Levers: prompt caching, smaller models where possible, shorter prompts and results, fewer round trips, and caching of static knowledge.</li>
+    <li>Compare it to the thing it replaces: the cost of a human handling the same contact. That is the business case.</li>
+  </ul>
+  <p>For orientation, the model used here is priced at about $2 per million input tokens and $10 per million output tokens (check current pricing). Cached input is read at about a tenth of the normal input price. Our 6,300-token turn cost roughly a cent without caching, which matches what you saw.</p>
+</section>
+
+<!-- =============== 10. SHIPPING =============== -->
+<section data-tab="10. Shipping to production">
+  <h2>Shipping and operating an agent</h2>
+  <p class="lead">An agent changes whenever you change the prompt, the model, a tool, or the configuration. Releasing it safely is its own skill, and it is the second thing a past candidate was rejected on.</p>
+
+  <h3>What a "release" contains</h3>
+  <p>In normal software a release is code. For an agent, behavior depends on four things together: the <b>prompt</b>, the <b>model and its settings</b>, the <b>tools and their descriptions</b>, and the <b>configuration</b> (limits, policies). Changing any one can change behavior, even if no Python changed. So version them <b>as one unit</b> (a single git commit or tag), and log that version on every turn so you can tell which release produced a conversation.</p>
+
+  <h3>Deployment strategies</h3>
+  <div class="grid g2">
+    <div class="card"><h4 style="margin-top:0">Blue-green</h4><p>Run the new version (green) next to the old (blue). Test green, then switch all traffic at once. Rollback is switching back. Simple and fast, but everyone gets the change at the same moment.</p></div>
+    <div class="card"><h4 style="margin-top:0">Canary</h4><p>Send a small share of traffic (say 1 to 5 percent) to the new version, compare it to the old one on real metrics, then increase gradually. Better for agents, because real behavior is hard to fully predict from evals.</p></div>
+    <div class="card"><h4 style="margin-top:0">Shadow mode</h4><p>The new version receives real traffic and produces answers, but customers never see them. You compare offline. Zero risk to customers, costs extra model calls.</p></div>
+    <div class="card"><h4 style="margin-top:0">Feature flags and a kill switch</h4><p>Turn individual capabilities on and off without a deploy, for example disable the write action. A global switch that routes everything to humans is the emergency brake.</p></div>
+  </div>
+  <p>A detail specific to agents: pin a conversation to one version. If the prompt changes in the middle of a chat, the model sees a history written under different rules, which can confuse it.</p>
+
+  <h3>Rollback criteria: decide before you ship</h3>
+  <p>Write down in advance the numbers that trigger a rollback, so the decision is not made under pressure. Examples:</p>
+  <ul>
+    <li>Eval pass rate below baseline in CI: the release does not start.</li>
+    <li>Online: escalation rate, fallback rate, or tool error rate up by more than an agreed margin.</li>
+    <li>Latency p95 above the budget.</li>
+    <li>Any confirmed exposure of another customer's data: immediate rollback.</li>
+  </ul>
+
+  <h3>The rollout path with a regulated client</h3>
+  <ol>
+    <li><b>Staff pilot</b>: employees use it, compare with what agents would say.</li>
+    <li><b>Read-only, narrow scope</b>: a few intents, with an easy path to a human.</li>
+    <li><b>Measure against the human baseline</b>: handle time, resolution, satisfaction, error rate.</li>
+    <li><b>Expand</b> by intent and by share of traffic.</li>
+    <li><b>Enable writes last</b>, with limits (for example a daily cap per customer) and a full audit log.</li>
+  </ol>
+
+  <h3>Operating it afterwards</h3>
+  <ul>
+    <li>Watch the dashboards, review a sample of conversations, and turn each failure into an eval case.</li>
+    <li>Models change: a provider update can shift behavior. Pin model versions where you can, and rerun evals when you upgrade.</li>
+    <li>Prompts drift as people add rules. Review them like code, remove outdated rules, and keep them short.</li>
+    <li>Keep an audit trail of every write action: who, what, when, with which key, with what outcome.</li>
+  </ul>
+
+  <h3>Security and compliance topics to be ready for</h3>
+  <ul>
+    <li><b>Personal data</b>: minimize what is sent to the model, mask it in logs, set retention limits, check the provider's data-handling terms.</li>
+    <li><b>Least privilege</b>: the agent's credentials should allow only what its tools need. Read-only first.</li>
+    <li><b>Data residency</b>: where is data stored and processed? Banks and government often have strict rules.</li>
+    <li><b>On-premises and network constraints</b>: the client may not allow outbound internet. That can force private connectivity, a self-hosted component, or a different model deployment.</li>
+    <li><b>Regulation specific to the use case</b>: in this project, giving personalized investment advice requires a licence in Israel, so the agent must refuse and hand over to a licensed advisor.</li>
+    <li><b>Auditability</b>: be able to show what the agent said and why.</li>
+  </ul>
+  <div class="callout repo"><span class="lbl">In this repo</span>All of this is written in <code>docs/PRODUCTION.md</code>, marked as <b>documented, not built</b>. What is built: the container, the health endpoint, the idempotent database seed, the structured logs, the version-in-one-place structure. Be exact about that line.</div>
+</section>
+
+<!-- =============== 11. THE FDE ROLE =============== -->
+<section data-tab="11. The FDE role">
+  <h2>The forward deployed engineer</h2>
+  <p class="lead">An FDE is an engineer who works directly with customers to make a product solve their real problem in their real environment. The code is only part of the job.</p>
+
+  <div class="callout warn"><span class="lbl">What I know and what I am inferring</span>What you told me about the company: it deploys production-grade AI agents (voice, chat, email) for regulated enterprises such as banks, insurers, telecom and the public sector. The rest of this tab describes the FDE role in general and how it likely applies. I do not know the company's internal processes, so treat those parts as informed expectations, not facts, and ask about them in the interview.</div>
+
+  <h3>Why the role exists</h3>
+  <p>A general product cannot fit every enterprise out of the box. Each client has different systems, data, rules, and people. Someone has to stand between the product team and the client, understand both, and make the product work in the client's world. That someone writes code, but also talks to stakeholders, scopes work, and measures results. That is the FDE.</p>
+
+  <h3>Three hats</h3>
+  <div class="grid g3">
+    <div class="card"><h4 style="margin-top:0">Engineer</h4><p>Builds the integrations, tools, prompts, data connections and deployments. Debugs in the client's environment. Writes evals and monitors production. Moves fast and prototypes.</p></div>
+    <div class="card"><h4 style="margin-top:0">Product owner</h4><p>Decides what to build first and what to leave out. Turns a vague wish into a scoped, testable behavior. Says no to scope creep. Feeds what clients need back to the product team.</p></div>
+    <div class="card"><h4 style="margin-top:0">Business analyst</h4><p>Understands the client's process and numbers. Finds which contact types are worth automating. Defines success in the client's terms (cost, handle time, satisfaction) and reports it.</p></div>
+  </div>
+
+  <h3>A typical engagement, step by step</h3>
+  <ol>
+    <li><b>Discovery.</b> Listen. What is the problem in business terms? Who feels it? How is it handled now? What volume? What are the costs and the pain? What are the rules and risks? Ask to see real examples and the systems involved.</li>
+    <li><b>Scoping.</b> Choose a narrow first slice with clear value and low risk, such as read-only status questions. Agree on success metrics and on what is out of scope.</li>
+    <li><b>Design.</b> Decide the tools, the data access, the escalation rules, the guardrails, and the evals. Review with the client's security, compliance and operations people early.</li>
+    <li><b>Build and integrate.</b> Connect to legacy systems, often through awkward interfaces. Start with mocks, replace them step by step.</li>
+    <li><b>Evaluate.</b> Build the test set with the client's real cases. Show results honestly, including failures.</li>
+    <li><b>Pilot.</b> Small, monitored, with an easy path to a human. Compare against the baseline.</li>
+    <li><b>Expand and operate.</b> Add intents, tune, monitor, review transcripts, fix failures, report numbers.</li>
+    <li><b>Feed back.</b> What you learned should improve the product, so the next client needs less custom work.</li>
+  </ol>
+
+  <h3>The reality of enterprise environments</h3>
+  <ul>
+    <li><b>Legacy systems.</b> Old APIs, SOAP, batch files, systems of record that update overnight, and several systems with partial overlap. Expect slow, flaky and badly documented interfaces.</li>
+    <li><b>Access takes time.</b> Credentials, network paths, security reviews, data-protection approvals. Plan for waiting, and work with mocks meanwhile.</li>
+    <li><b>Compliance.</b> Auditors, legal and risk teams have a say. Design for auditability from day one.</li>
+    <li><b>Change management.</b> Call-center agents may fear being replaced. Success depends on people adopting it. The agent should make their work better by taking the routine and passing on clean handoffs.</li>
+    <li><b>Dirty data and unclear ownership.</b> The question "who owns this system" often takes the longest to answer.</li>
+  </ul>
+
+  <h3>Measuring business value</h3>
+  <p>Customers do not buy "an AI agent", they buy a result. Know these terms and be ready to say which you would track first.</p>
+  <div class="tw"><table>
+    <tr><th>Metric</th><th>Meaning</th><th>Why it matters</th></tr>
+    <tr><td>Containment / resolution rate</td><td>Share of conversations fully handled without a human</td><td>The headline automation number. Must be paired with quality, or it can be gamed.</td></tr>
+    <tr><td>Escalation rate and reasons</td><td>Share handed to humans, and why</td><td>Shows what to fix next. Some escalation is healthy.</td></tr>
+    <tr><td>Average handle time</td><td>How long a contact takes</td><td>Direct cost link, for agents and for the bot.</td></tr>
+    <tr><td>CSAT</td><td>Customer satisfaction score</td><td>Guards against "automated but unhappy".</td></tr>
+    <tr><td>Accuracy / error rate</td><td>Wrong answers or wrong actions</td><td>Risk measure, especially in regulated work.</td></tr>
+    <tr><td>Cost per contact</td><td>Model + infrastructure vs. human cost</td><td>The business case.</td></tr>
+    <tr><td>Latency</td><td>Time to respond</td><td>For voice, a quality metric by itself.</td></tr>
+  </table></div>
+  <p>A warning on containment: you can raise it by making the bot refuse to escalate, which harms customers. Always read it next to satisfaction, error rate and the reasons customers contact again.</p>
+
+  <h3>Channels: voice, chat, email</h3>
+  <div class="tw"><table>
+    <tr><th></th><th>Voice</th><th>Chat</th><th>Email</th></tr>
+    <tr><td>Latency tolerance</td><td>Very low</td><td>A few seconds is fine</td><td>Minutes is fine</td></tr>
+    <tr><td>Input quality</td><td>Speech recognition errors, interruptions</td><td>Short, typed, informal</td><td>Long, messy, with quoted threads and attachments</td></tr>
+    <tr><td>Output style</td><td>Short, spoken, no lists or formatting</td><td>Short text, some formatting</td><td>Complete and formal</td></tr>
+    <tr><td>Identity</td><td>Caller id, voice, questions</td><td>Login or questions</td><td>Sender address, weak</td></tr>
+    <tr><td>Main risk</td><td>Silence and mishearing</td><td>Injection, long sessions</td><td>Injection hidden in forwarded text, wrong sender</td></tr>
+  </table></div>
+  <p>The core engine (loop, tools, gates, state, evals) is the same. The channel layer, the style of the prompt and the latency work differ. This is another reason the engine in this project is separate from the entry points.</p>
+
+  <h3>Communication skills the interviewer is judging</h3>
+  <ul>
+    <li><b>Explaining a trade-off simply</b> to a non-engineer: "this is faster but less accurate, here is what it means for your customers".</li>
+    <li><b>Saying "I don't know" and what you would do to find out.</b> It is a strength when done well.</li>
+    <li><b>Owning mistakes and limits.</b> The honest status lines in this repo ("evals not run live yet") are a good model.</li>
+    <li><b>Asking good questions</b> before building: what is the problem, for whom, how will we know it worked?</li>
+    <li><b>Prioritizing</b>: a small thing done reliably beats a large thing done halfway. You wrote that principle into your project from the start.</li>
+  </ul>
+
+  <h3>A story arc for "why this project"</h3>
+  <p>You can frame the whole project as a small FDE engagement: a business problem (call center overloaded with routine questions), a narrow scope with a safe first slice (verified, read-heavy requests plus one confirmed write), a risk analysis (identity, advice, injection, duplicates), a design that makes the risks structural, evals mapped to the risks, and a production plan with honest gaps. That is exactly the shape of the job.</p>
+</section>
+
+<!-- =============== 12. INTERVIEW KIT =============== -->
+<section data-tab="12. Interview kit">
+  <h2>Interview kit</h2>
+  <p class="lead">Click a question to read a model answer. The answers are written in first person for your project. Rewrite them in your own words: you must be able to say them naturally, and every claim must be true.</p>
+
+  <h3>The 2-minute project pitch</h3>
+  <div class="card">
+    <p>"I built an agent for an investment house's customer service. The business problem is a call center loaded with routine questions: balance, transaction history, withdrawal status, fee questions. The agent handles those, and hands everything else to a human with a structured summary.</p>
+    <p>The loop is small, so I wrote it myself. What I spent the effort on is what surrounds it. Identity is enforced in code: data tools refuse to run until the session is verified, and the tools never accept a customer id from the model, so a fooled model still cannot reach someone else's data. The one write action, a withdrawal request, takes two steps across two user turns and uses an idempotency key so a retry cannot duplicate it. Investment advice needs a licence in Israel, so it's refused through the prompt and a coarse output check.</p>
+    <p>For proof it works I have unit tests with a scripted fake model, 20 scenario evals across ten categories with a groundedness judge, structured logs with per-tool timing and token usage, and a one-command Docker setup with Postgres. The honest status: the full live eval run is still pending, and production topics like Redis sessions, tracing, and canary rollout are documented but not built."</p>
+  </div>
+
+  <h3>Design choices</h3>
+  <details><summary>Why did you not use a framework?</summary>
+    <p>The loop is about ten lines, and every framework has its own version of it. I wanted the gates, state and observability around it to be explicit and testable, and I wanted to be able to explain every line. In a team I would use whatever framework or platform they have, keeping the same boundaries. My code is behind interfaces, so the loop could be swapped without touching tools or gates.</p></details>
+  <details><summary>Why did you choose this model?</summary>
+    <p>A mid-size model as a default: strong enough for tool calling and following policy rules, with reasonable latency and cost. It is a config setting. The real decision should come from evals: run the same cases on a smaller model and compare pass rate, latency and cost. I have not run that comparison yet, and I would not claim the choice is optimal.</p></details>
+  <details><summary>Why Postgres? Would the agent own a database in production?</summary>
+    <p>Customer, account and transaction data is relational, and Postgres mirrors a real enterprise backend, including a network hop whose latency I can reason about. In production the agent usually does not own the database. It calls the client's APIs. The repository interface is exactly that seam: I would write an HTTP or SOAP adapter that implements the same methods, and caching and prefetching would matter more than query tuning.</p></details>
+  <details><summary>Why BM25 and not embeddings?</summary>
+    <p>The knowledge base is six short documents and keyword-heavy: fees, rules, products. BM25 is deterministic, needs no extra service, adds no latency and I can explain why a document ranked first. It misses synonyms and has no chunking. When the corpus grows or customers phrase things differently, I would add chunking and hybrid search with embeddings.</p></details>
+  <details><summary>Why did you pick this dataset / this domain?</summary>
+    <p>Because it combines the hard parts that regulated clients have: identity, personal data, a licensed-advice boundary, and a write that moves money. It is small enough to understand fully but exercises every safety mechanism. I used distinctive mock values so any data leak is easy to detect in evals.</p></details>
+  <details><summary>Why async everywhere?</summary>
+    <p>Model and tool calls are waiting on the network. Async lets one process handle many conversations, and makes parallel tool calls a one-liner. A test proves two 150 ms tools take about 150 ms in total.</p></details>
+
+  <h3>Safety and correctness</h3>
+  <details><summary>How do you stop the agent from leaking another customer's data?</summary>
+    <p>Structurally. Tools take no customer id. They read the verified id from the session, which only the identity tool can set, and a registry gate blocks data tools before verification. So a prompt-injected model asking for customer C007 can only ever fetch the verified customer's own data. There is an eval for it, and the other customer's balance is distinctive so a leak would be obvious.</p></details>
+  <details><summary>What if the model is tricked into calling the withdrawal tool?</summary>
+    <p>The first call only records a proposal and returns "confirmation required". It executes only if the same call is repeated on a later user turn with identical arguments. The idempotency key is generated by the code and never visible to the model. Limit: the code proves a turn passed, not that the user said yes. For real money I would confirm out of band with a button or a one-time code.</p></details>
+  <details><summary>How do you handle prompt injection?</summary>
+    <p>I assume it will succeed sometimes and design so that success does not hurt. Dangerous capabilities are not available to the model, they are gated in code. I also treat tool results and retrieved documents as untrusted input. I test it with injection cases in the evals.</p></details>
+  <details><summary>How do you prevent hallucinated numbers?</summary>
+    <p>Three layers: the prompt says never state data that did not come from a tool, tool failures return explicit errors that say "do not guess", and evals check groundedness, with a judge that sees the raw tool results. The outage case checks that no number appears when the backend is down.</p></details>
+
+  <h3>Evaluation</h3>
+  <details><summary>How do you know the agent works?</summary>
+    <p>Three levels. Unit tests with a scripted fake model prove my code: loop, gates, retries, confirmation. Twenty scenario evals against the live model check behavior across ten categories using deterministic checks first. A groundedness judge with a fixed rubric covers what regexes cannot. In production I would add online metrics and a regression set built from real failures. My honest caveat is that the live eval has not been run yet, and regexes and a same-model judge are weak points.</p></details>
+  <details><summary>What would you do if the eval pass rate drops after a prompt change?</summary>
+    <p>Look at which categories dropped before looking at the overall number. Read the failing transcripts, find the cause, usually an instruction that now conflicts with another, fix it, and rerun several times because of variance. If safety categories drop, the change does not ship.</p></details>
+  <details><summary>What are the weaknesses of your eval?</summary>
+    <p>Regexes on free text are brittle. The judge is the same model, so it is likely lenient. Twenty cases from one run is a small sample. The confirmation case checks the flow but not an ambiguous reply. It uses an in-memory repository, so database behavior is covered by separate integration tests. I would fix this by running cases multiple times, using a different judge model, and growing the set from real failures.</p></details>
+
+  <h3>Production</h3>
+  <details><summary>How would you deploy a prompt change safely?</summary>
+    <p>Prompt, model, tools and config are one versioned release. CI runs the evals as a gate. Then a canary: a small share of traffic to the new version, compared on escalation rate, fallback rate, tool errors, latency and satisfaction, with rollback criteria written in advance. Conversations stay pinned to one version.</p></details>
+  <details><summary>How do you make a voice agent fast enough?</summary>
+    <p>First measure where the time goes; in my own measurements the model call dominates, not the database. Then: stream the model output into speech, prefetch customer data right after identification, cache static knowledge, use prompt caching and a small model for routing, run independent tools in parallel, keep prompts and tool results small, and set a per-turn latency budget with a filler phrase when it is exceeded. Not all of that is built; parallel tools, indexed lookups and timing logs are.</p></details>
+  <details><summary>How would this scale?</summary>
+    <p>The API is stateless, so run many copies behind a load balancer with sessions in Redis and a per-session lock. Add rate limiting, queues for long workflows, a fallback model, and cost tracking. The in-memory store and missing lock are documented gaps.</p></details>
+  <details><summary>What would you monitor in production?</summary>
+    <p>Latency percentiles split into model time and tool time, tool error rate, fallback rate, escalation rate and reasons, token usage and cost per conversation, and sampled groundedness checks. Alerts tie to rollback criteria, and humans review a weekly sample plus every escalation and complaint.</p></details>
+
+  <h3>FDE and behavior</h3>
+  <details><summary>A client wants the agent to do something risky. What do you do?</summary>
+    <p>Understand the goal behind the request first. Then explain the risk in their terms, propose a safer version (read-only first, confirmation, a human approval step, a daily cap) and show how we would measure it. If a requirement is a legal line, such as licensed advice, I do not bend it, I design the handoff to the licensed advisor.</p></details>
+  <details><summary>The client's system is slow and unreliable. What do you do?</summary>
+    <p>Measure it, then protect the conversation: timeouts, one retry, clear fallback wording, caching and prefetching where data is stable, and an alert on the dependency. I would also bring the numbers to the client's team, since a fix on their side may be the best improvement.</p></details>
+  <details><summary>How do you handle a vague request like "make it smarter"?</summary>
+    <p>Turn it into something measurable: which conversations fail, why, how often. Look at real transcripts, categorize the failures, pick the top one, write an eval case that captures it, fix it, and show the number move.</p></details>
+  <details><summary>What are the weakest parts of your project?</summary>
+    <p>Identity is a weak factor and lockout is per session. The advice check is a coarse regex. There is no per-session lock, so concurrent requests could interleave. The confirmation proves a turn passed, not agreement. And the live eval run is pending. I documented all of them, and I know what I would do about each.</p></details>
+
+  <h3>Questions you can ask them</h3>
+  <ul>
+    <li>What does a typical first month look like for a new FDE here? Which part is configuration of the platform and which part is custom code?</li>
+    <li>How do you evaluate agents before and after release? Is there a shared eval framework?</li>
+    <li>How do you handle model upgrades, and how do you detect regressions in production?</li>
+    <li>For voice, what latency do you target, and where does the time usually go?</li>
+    <li>What is the hardest integration you have had to do, and what made it hard?</li>
+    <li>How does feedback from the field reach the product team?</li>
+  </ul>
+
+  <h3>If you get stuck</h3>
+  <div class="callout say"><span class="lbl">A reliable structure for any design question</span>
+    <ol style="margin:4px 0 0"><li>Restate the problem and the goal in business terms.</li><li>State what you would not build yet.</li><li>Walk through the flow.</li><li>Name the main risks and where each is handled.</li><li>Say how you would measure it works.</li><li>Say how it fails and what the user sees.</li><li>Say what you would do next, honestly.</li></ol></div>
+</section>
+
+<!-- =============== 13. GLOSSARY AND MAP =============== -->
+<section data-tab="13. Glossary, map, checklist">
+  <h2>Glossary, repo map, and self-check</h2>
+
+  <h3>Glossary</h3>
+  <div class="tw"><table>
+    <tr><th>Term</th><th>Plain meaning</th></tr>
+    <tr><td>Token</td><td>A small piece of text the model reads and writes; the unit of cost and length.</td></tr>
+    <tr><td>Context window</td><td>The maximum tokens the model can consider in one call.</td></tr>
+    <tr><td>System prompt</td><td>The standing instructions at the top: role, rules, style.</td></tr>
+    <tr><td>Tool / function calling</td><td>The model asks your code to run a named function with arguments.</td></tr>
+    <tr><td>Agent loop</td><td>Ask the model, run its tools, feed results back, repeat until done.</td></tr>
+    <tr><td>Stop reason</td><td>Why the model stopped: it finished, hit the length limit, asked for a tool, or refused.</td></tr>
+    <tr><td>Hallucination</td><td>A confident statement that is not true or not supported.</td></tr>
+    <tr><td>Grounding</td><td>Making answers depend on real retrieved or tool data.</td></tr>
+    <tr><td>RAG</td><td>Retrieve relevant documents first, then let the model answer from them.</td></tr>
+    <tr><td>BM25</td><td>A classic keyword-ranking algorithm used for search.</td></tr>
+    <tr><td>Embedding</td><td>A list of numbers representing meaning; used to find similar text.</td></tr>
+    <tr><td>MCP</td><td>A standard protocol for exposing tools and data to models.</td></tr>
+    <tr><td>Prompt injection</td><td>Text that tries to override the model's instructions.</td></tr>
+    <tr><td>Guardrail</td><td>A check that limits what the agent may say or do.</td></tr>
+    <tr><td>Idempotency</td><td>Doing the same action twice has the same effect as once.</td></tr>
+    <tr><td>Prompt caching</td><td>Provider remembers the repeated start of a prompt so it is cheaper and faster.</td></tr>
+    <tr><td>Eval</td><td>A repeatable test of the agent's behavior.</td></tr>
+    <tr><td>LLM-as-judge</td><td>Using a model to grade another model's output against a rubric.</td></tr>
+    <tr><td>p95</td><td>The value that 95 percent of measurements are below; shows the slow tail.</td></tr>
+    <tr><td>Correlation id</td><td>An id on every log line of one request, to join them.</td></tr>
+    <tr><td>Trace / span</td><td>A timeline of one request, made of nested timed steps.</td></tr>
+    <tr><td>OpenTelemetry</td><td>The standard for producing traces, metrics and logs.</td></tr>
+    <tr><td>Blue-green</td><td>Two environments; switch traffic from old to new at once.</td></tr>
+    <tr><td>Canary</td><td>Send a small share of traffic to the new version first.</td></tr>
+    <tr><td>Shadow mode</td><td>New version runs on real traffic but its answers are not shown.</td></tr>
+    <tr><td>Containment rate</td><td>Share of conversations resolved with no human.</td></tr>
+    <tr><td>Escalation / handoff</td><td>Passing the conversation to a human, with a summary.</td></tr>
+    <tr><td>CSAT</td><td>Customer satisfaction score.</td></tr>
+    <tr><td>FDE</td><td>Forward deployed engineer: an engineer embedded with customers.</td></tr>
+    <tr><td>Dependency injection</td><td>Giving an object its parts from outside instead of letting it build them.</td></tr>
+    <tr><td>Ports and adapters</td><td>The core depends on interfaces; adapters implement them for real technologies.</td></tr>
+  </table></div>
+
+  <h3>Map: concept to code in this repo</h3>
+  <div class="tw"><table>
+    <tr><th>Concept</th><th>Where to point</th></tr>
+    <tr><td>The loop</td><td><code>core/agent.py</code> → <code>Agent._loop</code></td></tr>
+    <tr><td>Tool design</td><td><code>domain/tools.py</code> (seven tools), <code>core/tools.py</code> (<code>Tool</code>, <code>ToolRegistry</code>)</td></tr>
+    <tr><td>Gates</td><td><code>core/tools.py</code> (<code>execute</code>, <code>_run_write</code>), <code>core/guardrails.py</code></td></tr>
+    <tr><td>State</td><td><code>core/session.py</code>, <code>adapters/memory_session_store.py</code></td></tr>
+    <tr><td>Evals</td><td><code>domain/eval_cases.yaml</code>, <code>evals/runner.py</code>, <code>evals/judges.py</code>, <code>docs/EVALS.md</code></td></tr>
+    <tr><td>Fake model for tests</td><td><code>adapters/fake_llm.py</code>, <code>tests/</code></td></tr>
+    <tr><td>Observability</td><td><code>core/logging.py</code>, log calls in agent and tools</td></tr>
+    <tr><td>Reliability</td><td>Retry and timeout in <code>Agent._call_llm</code>; tool retry in <code>ToolRegistry._invoke</code></td></tr>
+    <tr><td>Wiring / dependency injection</td><td><code>app/container.py</code></td></tr>
+    <tr><td>Prompt caching and dev cache</td><td><code>adapters/anthropic_llm.py</code>, <code>adapters/llm_cache.py</code></td></tr>
+    <tr><td>Production plan</td><td><code>docs/PRODUCTION.md</code></td></tr>
+    <tr><td>Decisions with reasons</td><td><code>docs/DECISIONS.md</code></td></tr>
+  </table></div>
+
+  <h3>Numbers worth remembering about your project</h3>
+  <div class="kv">
+    <div><span>Tools</span><b>7</b></div>
+    <div><span>Eval cases / categories</span><b>20 / 10</b></div>
+    <div><span>Tests</span><b>76</b></div>
+    <div><span>Max loop steps</span><b>6</b></div>
+    <div><span>Model timeout</span><b>30 s</b></div>
+    <div><span>Tool timeout</span><b>10 s</b></div>
+    <div><span>Retries</span><b>1</b></div>
+    <div><span>Failed ID checks to lock</span><b>2</b></div>
+  </div>
+
+  <h3>What is built versus only documented</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag ok">Built and tested</span><ul><li>Agent loop, retries, timeouts, fallback</li><li>Identity gate, write confirmation, idempotency</li><li>Escalation with handoff</li><li>Postgres repository and idempotent seed</li><li>BM25 knowledge search</li><li>Structured logs with tracebacks and ids</li><li>Docker compose, chat UI, dev cache, prompt caching (verified with real numbers)</li></ul></div>
+    <div class="card"><span class="tag warn">Documented only, or pending</span><ul><li>Live eval results (runner exists, not run)</li><li>Redis sessions and per-session lock</li><li>OpenTelemetry tracing and dashboards</li><li>Canary rollout, rollback automation</li><li>Streaming for voice, prefetching</li><li>Real authentication, per-customer rate limits</li></ul></div>
+  </div>
+
+  <h3>Self-check: can you explain it without looking?</h3>
+  <div class="meter"><i id="meter"></i></div>
+  <p id="meterText" style="color:var(--muted)">0 of 0</p>
+  <div class="card" id="checklist"></div>
+</section>
+
+</main>
+<script>
+(function () {
+  /* tabs */
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main > section'));
+  var tabsEl = document.getElementById('tabs');
+  function show(i) {
+    sections.forEach(function (s, k) { s.hidden = k !== i; });
+    Array.prototype.forEach.call(tabsEl.children, function (b, k) { b.setAttribute('aria-selected', String(k === i)); });
+    try { history.replaceState(null, '', '#' + i); } catch (e) {}
+    window.scrollTo({ top: 0 });
+    renderPager(i);
+  }
+  sections.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.className = 'tab'; b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = s.dataset.tab;
+    b.addEventListener('click', function () { show(i); });
+    tabsEl.appendChild(b);
+  });
+  function renderPager(i) {
+    sections.forEach(function (s) { var old = s.querySelector('.pager'); if (old) old.remove(); });
+    var p = document.createElement('div'); p.className = 'pager';
+    var prev = document.createElement('button'); prev.className = 'btn'; prev.type = 'button';
+    prev.textContent = i > 0 ? '← ' + sections[i - 1].dataset.tab : ''; prev.style.visibility = i > 0 ? 'visible' : 'hidden';
+    prev.addEventListener('click', function () { show(i - 1); });
+    var next = document.createElement('button'); next.className = 'btn'; next.type = 'button';
+    next.textContent = i < sections.length - 1 ? sections[i + 1].dataset.tab + ' →' : ''; next.style.visibility = i < sections.length - 1 ? 'visible' : 'hidden';
+    next.addEventListener('click', function () { show(i + 1); });
+    p.appendChild(prev); p.appendChild(next); sections[i].appendChild(p);
+  }
+  var start = parseInt((location.hash || '#0').slice(1), 10);
+  show(Number.isInteger(start) && start >= 0 && start < sections.length ? start : 0);
+
+  /* theme */
+  document.getElementById('theme').addEventListener('click', function () {
+    var root = document.documentElement;
+    var dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+  });
+
+  /* self-check list */
+  var items = [
+    'Describe what an LLM is as a component: stateless, non-deterministic, can be wrong, cost depends on tokens.',
+    'Write the agent loop from memory in about ten lines, and say where the gates sit.',
+    'Explain exactly how tool calling works, and why the gap between request and execution matters.',
+    'Name the five pillars: tool design, gates in code, state, evals, observability.',
+    'Give three principles of good tool design, and one example from this repo.',
+    'Explain why a prompt is not a security control, and give two gates that are enforced in code.',
+    'Explain why no tool takes a customer id from the model.',
+    'Walk through the two-step withdrawal and say what it does and does not guarantee.',
+    'Explain what idempotency is and why a retried write needs it.',
+    'Explain control state versus conversation history, and why they are separate.',
+    'Say why the API should be stateless and what changes when moving to Redis.',
+    'Describe the three levels of testing for an agent, and what the fake model is for.',
+    'Name three weaknesses of your evals and what you would do about each.',
+    'Explain what you log per turn, what you never log, and why exceptions are logged with tracebacks.',
+    'Say where the time goes in a turn (use your measured numbers) and three ways to reduce it.',
+    'Explain what changes for voice versus chat.',
+    'Describe blue-green versus canary and pick rollback criteria.',
+    'Explain what is in an agent "release" and why prompt, model, tools and config are versioned together.',
+    'Describe the FDE role: three hats and the steps of an engagement.',
+    'Name four business metrics and the trap in containment rate.',
+    'Say honestly what is built and what is only documented in your project.',
+    'Deliver the 2-minute project pitch without notes.'
+  ];
+  var KEY = 'fde-selfcheck-v1', done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  var box = document.getElementById('checklist');
+  function update() {
+    var n = items.filter(function (_, i) { return done[i]; }).length;
+    document.getElementById('meter').style.width = (100 * n / items.length) + '%';
+    document.getElementById('meterText').textContent = n + ' of ' + items.length + ' ready';
+  }
+  items.forEach(function (text, i) {
+    var row = document.createElement('div'); row.className = 'check';
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = 'c' + i; cb.checked = !!done[i];
+    var lab = document.createElement('label'); lab.htmlFor = cb.id; lab.textContent = text;
+    cb.addEventListener('change', function () {
+      if (cb.checked) done[i] = 1; else delete done[i];
+      try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {}
+      update();
+    });
+    row.appendChild(cb); row.appendChild(lab); box.appendChild(row);
+  });
+  update();
+})();
+</script>
+</body>
+</html>
