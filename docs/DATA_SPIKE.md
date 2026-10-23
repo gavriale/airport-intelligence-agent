@@ -37,7 +37,7 @@ Searched the data.bts.gov catalog (39 datasets matched for T-100, segment, marke
 - **ArcGIS NTAD service** (`services.arcgis.com/xOi1kZaI0eWDREZv/.../T100_Domestic_Market_and_Segment_Data/FeatureServer`), checked after the first report: a single table (id 1, 1,279 rows) with one row per origin airport for **2024 only**: `year, origin, enplanements, passengers, departures, arrivals, freight, mail`. **No destination and no distance, so it is not route-level.** Its domestic departures match the Socrata domestic departures closely (SFO 138,571 vs 138,828; LAX 206,637 vs 208,824; ANC 71,765 vs 79,667), which suggests it is the domestic slice of the same data. Useful only as a cross-check.
 - Not used, by decision: the BTS On-Time Reporting Carrier files (`transtats.bts.gov/PREZIP/...`). They exist as monthly ZIPs of about 27 to 33 MB, latest **August 2026** (published 2026-10-19), and are a **bulk download, not an API**. Not downloaded or parsed here. Decision: out of scope, because they cover domestic passenger carriers only and ANC's long-haul traffic is mostly international cargo.
 
-**Consequence.** The exact share of long-haul flights out of ANC cannot be computed. We can report a lower bound from international departures plus the average stage length, and say so.
+**Consequence.** The exact share of long-haul flights out of ANC cannot be computed from public API data, because route-level distances are not available. The agent reports the international share of departures and the average stage length as proxies and says so.
 
 ## 3. OurAirports
 
@@ -74,9 +74,34 @@ The T-100 summary appears to include all-cargo flights (ANC freight is 5.77 bill
 
 ## Decisions taken after the spike
 
-1. No On-Time ingest. Long-haul share is a **lower bound**: international departures divided by total departures, with the average stage length alongside. Assumption: every international departure from ANC is long-haul (Canadian departures are the exception). Domestic flights over 3,000 mi are unknown.
+1. No On-Time ingest. The long-haul question is answered with two **proxies**, not a computed share: the international share of departures and the average stage length. The international share is an approximation, not a bound. It overcounts short international flights (Canada) and undercounts long domestic ones. The agent says the exact long-haul percentage is not computable from public API data.
 2. A snapshot of the data is loaded into Postgres at startup (filtered to peer airports so it is small enough to commit), and `make ingest` refreshes it from the APIs.
 3. Escalation is removed entirely.
 4. Percentiles are computed against national peers. Regional queries rank within the region using those national percentiles.
 5. Demand gap = passenger growth minus seat growth. Weights: growth 0.25, load factor 0.25, pax per runway 0.20, demand gap 0.15, scale 0.10, peak 0.05. They live in config.
 6. `search_knowledge` is replaced by `get_methodology`, which returns definitions and weights from config. The BM25 index is removed.
+
+## Findings from the ingest (stage 2)
+
+Run on 2026-10-23. Latest period April 2026. Snapshot: 2,036 US airports with an IATA code, 3,418 open runways, **228 peer airports** (at least 100,000 passengers in the last 12 months) with 20,019 monthly rows from Jan 2019.
+
+- **Total departures = domestic + international on every row** (verified on all 20,019 rows), where international is the BTS column `outbound_international`.
+- **PBI is listed in OurAirports under its new code DJT** (the airport was renamed). BTS still uses PBI. The ingest matches such codes through the ICAO identifier (K + code) and keeps the BTS code, so users can say PBI.
+- **Territories are not included.** BQN, GUM, SJU, SPN, STT and STX are above the threshold in BTS but are not US-country airports in OurAirports. The snapshot is the 50 states plus DC.
+- **Seven peers have missing months** (ILG 11, JAC 1, LAL 15, ORH 3, SGU 3, VRB 3, XWA 9), mostly seasonal or irregular service. Growth metrics need 24 complete months, so scoring must handle or flag these. The five key airports (ANC, SFO, LAX, SNA, BOS) and the New England airports BDL, PVD, MHT, PWM and BTV are complete. **ORH (Worcester, MA) is a New England peer with 3 missing months.**
+- **25 airport-months have departures but zero seats** (ILG, LAL, PAE), so load factor is undefined for them.
+- **Cargo is confirmed in the data.** ANC over the last 12 months: 86,373 departures, 2.73 M passengers, 3.75 M seats. Of the 13,327 international departures, only 58,514 seats exist in total, about 4 seats per departure, so international departures from ANC are overwhelmingly all-cargo. A test pins this. Domestic ANC departures average about 55 seats.
+
+### How each metric treats cargo flights
+
+All-cargo flights add departures and freight but no passengers and no seats.
+
+| Metric | Treatment |
+|---|---|
+| Passengers, passenger growth | Not affected. |
+| Load factor (passengers / seats), seat growth, demand gap | Not affected. Cargo adds no seats. |
+| Passengers per runway | Not affected in the numerator; the runway count is physical. |
+| Departures per runway | **Includes cargo flights.** That is correct for runway pressure, but it is not passenger-service activity. Labelled as all departures. |
+| Average seats per departure | **Biased low** at cargo hubs. Not used in the score. |
+| Average flight distance, international share of departures | **Dominated by cargo at ANC.** They describe all departures, not passenger flights. The agent states this. |
+| Freight | Reported separately; not part of the expansion score. |

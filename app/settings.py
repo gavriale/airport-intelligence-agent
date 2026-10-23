@@ -15,3 +15,4 @@ class Settings(BaseSettings):
     llm_cache: bool = False
     tool_timeout_s: float = 10
     max_iterations: int = 6
+    database_url: str = "postgresql://agent:agent@localhost:5432/agent"

@@ -38,7 +38,7 @@ An investment firm wants an agent that helps analysts find US airports where ren
 - **Python 3.11+, async end to end.** `AsyncAnthropic`, `asyncpg`, `asyncio.gather` for parallel tool calls.
 - **LLM:** `LLMProvider` interface, Anthropic adapter (default), `FakeLLMProvider` for tests, dev-only record/replay cache (`LLM_CACHE=1`, never used by evals), prompt caching in the adapter.
 - **API and UI:** FastAPI (`POST /chat`, `GET /health`) plus a static chat page; CLI for demos.
-- **Data:** PostgreSQL via `asyncpg` behind a repository interface. A **snapshot** of public data is loaded at startup (idempotent seed, filtered to peer airports so it is small enough to commit). `make ingest` refreshes the snapshot from the APIs. Parameterized queries only.
+- **Data:** PostgreSQL via `asyncpg` behind a repository interface (`domain/repository.py`). A committed **snapshot** (CSV files in `domain/data/`) is loaded at startup in one transaction and skipped when its hash is unchanged. Traffic is kept for peer airports only (at least 100,000 passengers in the last 12 months); airports and runways cover every US airport with an IATA code. `make ingest` rebuilds the snapshot from the public APIs. Parameterized queries only.
 - **No retrieval index.** The knowledge base and BM25 were removed; methodology comes from `get_methodology` (config).
 - **Config:** `pydantic-settings` (`.env`), scoring weights and definitions in `domain/config.yaml`.
 - **Tests:** pytest (+ pytest-asyncio). Lint and format with `ruff`.
@@ -64,7 +64,8 @@ An investment firm wants an agent that helps analysts find US airports where ren
 │   ├── system_prompt.md
 │   ├── tools.py           # airport tools
 │   ├── scoring.py         # deterministic KPIs and score (pure functions)
-│   ├── data/              # schema.sql, committed snapshot
+│   ├── repository.py      # AirportRepository interface and record models
+│   ├── data/              # schema.sql, airports.csv, runways.csv, airport_month.csv, snapshot_meta.json
 │   └── eval_cases.yaml
 ├── scripts/ingest.py      # builds the snapshot from public APIs
 ├── evals/                 # runner.py, judges.py
@@ -84,9 +85,9 @@ An investment firm wants an agent that helps analysts find US airports where ren
 - Data is **monthly, and about six months old** (as of April 2026). Always report the as-of month.
 - **No terminal or gate capacity data.** The score measures demand pressure, not physical terminal constraint. Runway count is a weak capacity proxy.
 - **No delay history.** "Congestion" means utilization of runways and seats, plus a live FAA snapshot. Never claim measured delays.
-- **No route-level data.** The exact share of long-haul flights is not computable. Report a **lower bound** (international departures divided by total departures; assumes every international departure is long-haul) and the average stage length. Domestic flights over 3,000 miles are unknown.
+- **No route-level data.** The exact share of long-haul flights is **not computable from public API data**, because route-level distances are not available. The agent presents two proxies and says so: the **international share of departures** and the **average stage length**. The international share is an approximation, not a bound: it overcounts short international flights (for example to Canada) and undercounts long domestic flights (for example Alaska to the East Coast).
 - **No carrier-by-airport data.** Carrier concentration is not answerable.
-- **Cargo is included** in the T-100 summary (to be confirmed at ingest). Passenger and load-factor metrics are unaffected; departures include cargo flights; average seats per departure and average distance are distorted at cargo hubs such as ANC.
+- **Cargo is included** in the T-100 summary (confirmed: ANC international departures average about 4 seats). Passenger, seat and load-factor metrics are unaffected; departure counts include cargo flights; average flight distance and the international share describe all departures at cargo hubs such as ANC. The per-metric table is in `docs/DATA_SPIKE.md`.
 - **"Unmet demand" is not measured.** Report proxies (load factor, demand gap, recovery vs 2019) and label any explanation of "why" as a hypothesis, not a finding.
 
 ## Scoring (deterministic, in `domain/scoring.py`, weights in `domain/config.yaml`)
@@ -137,4 +138,6 @@ Identity verification, write actions with confirmation and idempotency, escalati
 - Work in stages; after each stage run tests and lint, summarize, update `docs/DECISIONS.md`, and **stop for review** where I ask.
 - Commit at the end of a stage with a clear message. Do not push.
 - Do not spend live-model tokens or download large files without asking. Say clearly what is not verified.
-- Build order: (1) strip old domain and rewrite instructions, (2) data layer (schema, ingest, snapshot, repository), (3) scoring and tools, (4) prompt, API and UI, (5) evals, (6) docs and presentation.
+- Build order: (1) strip old domain and rewrite instructions [done], (2) data layer: schema, ingest, snapshot, repository [done], (3) scoring and tools, (4) prompt, API and UI, (5) evals, (6) docs and presentation.
+- At the docs stage every document with a "Stale" banner is rewritten or deleted. `docs/SWAP_GUIDE.md` is deleted.
+- The learning guides and this file are marked `export-ignore` in `.gitattributes`, so `git archive` leaves them out of the submission.

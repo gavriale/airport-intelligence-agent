@@ -1,0 +1,36 @@
+{
+  "fetched_at": "2026-10-23T07:23:06+00:00",
+  "latest_period": "2026-04-01",
+  "history_start": "2019-01-01",
+  "peer_min_annual_passengers": 100000,
+  "sources": {
+    "bts_t100_origin_airport": "https://data.bts.gov/resource/r495-tyji.json",
+    "ourairports": "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main"
+  },
+  "counts": {
+    "airports": 2036,
+    "runways": 3418,
+    "peers": 228,
+    "traffic_rows": 20019
+  },
+  "peer_codes_matched_by_icao": [
+    "PBI"
+  ],
+  "peers_missing_months": {
+    "ILG": 11,
+    "JAC": 1,
+    "LAL": 15,
+    "ORH": 3,
+    "SGU": 3,
+    "VRB": 3,
+    "XWA": 9
+  },
+  "peers_without_ourairports_match": [
+    "BQN",
+    "GUM",
+    "SJU",
+    "SPN",
+    "STT",
+    "STX"
+  ]
+}
