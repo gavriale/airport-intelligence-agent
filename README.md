@@ -14,7 +14,7 @@ Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the da
 | 2. Data layer: schema, ingest, committed snapshot, repository | done |
 | 3. Scoring and airport tools | done |
 | 4. Prompt, API and chat UI polish | prompt and `GET /ranking` done; the chat page works but is plain |
-| 5. Evals | built and run three times (67%, 60%, 85%; the last run passes 17 of 20 cases and the 3 failures are documented): see [docs/EVALS.md](docs/EVALS.md) |
+| 5. Evals | built and run four times (67%, 60%, 85%, 75%; run 4 added code-computed score explanations and passes 15 of 20, the 5 failures are documented): see [docs/EVALS.md](docs/EVALS.md) |
 | 6. Docs and presentation | not started |
 
 Data sources and their limits were checked first: see [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md).

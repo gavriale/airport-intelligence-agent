@@ -103,7 +103,10 @@ def build_tools(analytics: Analytics) -> list[Tool]:
             "candidates for expansion' and similar. Pass a region (for example 'New England') or "
             "state codes, or neither for a national ranking. Percentiles are always national. "
             "Airports that cannot be scored are listed in not_scored with the reasons. Optional "
-            "weights change the emphasis.",
+            "weights change the emphasis. Each airport has points (weight x percentile per "
+            "component, adding up to the score) and main_driver; leaders_by_component names the "
+            "top airport per component and score_spread the gap between the airports returned. "
+            "Use only these fields for superlatives and for why one airport outranks another.",
             RankArgs,
             rank_airports,
         ),

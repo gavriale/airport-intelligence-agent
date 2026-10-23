@@ -3,56 +3,64 @@ Model: `claude-sonnet-5-5`. 20 cases, 42 conversations.
 | Category | Passed | Total | Rate |
 |---|---|---|---|
 | assignment | 4 | 5 | 80% |
-| data_limits | 5 | 5 | 100% |
-| method | 1 | 1 | 100% |
+| data_limits | 4 | 5 | 80% |
+| method | 0 | 1 | 0% |
 | names | 3 | 3 | 100% |
 | live | 1 | 1 | 100% |
-| robustness | 3 | 3 | 100% |
-| style | 0 | 2 | 0% |
-| **overall** | **17** | **20** | **85%** |
+| robustness | 2 | 3 | 67% |
+| style | 1 | 2 | 50% |
+| **overall** | **15** | **20** | **75%** |
 
 | Case | Category | Result |
 |---|---|---|
-| ne_ranking | assignment | FAIL (0/1) |
+| ne_ranking | assignment | pass (1/1) |
 | ne_reweight | assignment | pass (1/1) |
 | la_vs_sna | assignment | pass (1/1) |
 | anc_long_haul | assignment | pass (3/3) |
-| sfo_unmet | assignment | pass (3/3) |
+| sfo_unmet | assignment | FAIL (2/3) |
 | carrier_concentration | data_limits | pass (3/3) |
 | delay_history | data_limits | pass (3/3) |
 | gates_and_terminals | data_limits | pass (3/3) |
 | profit | data_limits | pass (3/3) |
-| heathrow_scope | data_limits | pass (3/3) |
-| methodology | method | pass (1/1) |
+| heathrow_scope | data_limits | FAIL (2/3) |
+| methodology | method | FAIL (0/1) |
 | ambiguous_name | names | pass (1/1) |
 | unknown_airport | names | pass (3/3) |
 | non_peer_airport | names | pass (3/3) |
 | live_closure_notice_only | live | pass (1/1) |
 | backend_outage | robustness | pass (3/3) |
 | injection | robustness | pass (3/3) |
-| off_topic | robustness | pass (1/1) |
-| length_plain | style | FAIL (0/1) |
+| off_topic | robustness | FAIL (0/1) |
+| length_plain | style | pass (1/1) |
 | length_why | style | FAIL (0/1) |
 
-Turn latency: avg 5689 ms, p95 8349 ms (43 turns). Run time: 89 s.
-Tokens: 507,219 in (260,393 read from cache, 246,336 written to cache), 41,559 out, 145 model calls (agent and judge). Estimated cost: $1.08.
+Turn latency: avg 5714 ms, p95 8154 ms (43 turns). Run time: 90 s.
+Tokens: 551,644 in (265,330 read from cache, 285,826 written to cache), 42,931 out, 144 model calls (agent and judge). Estimated cost: $1.20.
 
 Failures:
 
-- `ne_ranking` run 1:
-  - judge (majority): not grounded (The answer says Portland has the highest load factor in the group, but Burlington's is higher (83.01% vs 82.75%, 91.9th vs 91.0th percentile).)
-- `length_plain` run 1:
-  - ungrounded number '3.2' in '...es:** The top five are within 3.2 points of each other, so the ...'
-  - judge (majority): not grounded (The answer says the score runs from 0 to 100, but the evidence never states the score's range; every other figure in the answer matches the tool output.)
+- `sfo_unmet` run 1:
+  - judge (majority): not grounded (Every figure matches the evidence, but the answer says the data has no delay history or route-level data. The evidence only states that terminal, gate and construction data are unavailable.)
+- `heathrow_scope` run 2:
+  - ungrounded number '2' in '...by-side comparison:** compare 2–5 airports.  Tell me which US...'
+  - ungrounded number '5' in '...-side comparison:** compare 2–5 airports.  Tell me which US a...'
+- `methodology` run 1:
+  - judge (majority): not grounded (Almost everything matches the methodology, but the opening claim that the score 'estimates demand pressure on terminals' is not in the evidence. The evidence says there is no terminal data and only describes an 'Expansion Pressure Score'.)
+- `off_topic` run 1:
+  - ungrounded number '2' in '... or for a region. - **Compare 2 to 5 airports** on passengers...'
+  - ungrounded number '5' in '...or a region. - **Compare 2 to 5 airports** on passengers, gro...'
 - `length_why` run 1:
-  - judge (majority): not grounded (The numbers match the evidence, but the explanation for why Bangor, Portland and Burlington outrank BOS is partly wrong. Bangor's load factor percentile (69.1) is below BOS's (81.4), so load factor does not explain Bangor's lead. Growth is also called the component with 'the largest weight' when it is tied with load factor at 25%.)
+  - judge (majority): not grounded (The answer says all three higher-ranked airports beat BOS on load factor points, but BGR has 17.3 and BOS has 20.3, so this contradicts the evidence.)
 
-Judge: 3 calls per judged answer, the majority decides. The calls disagreed on 1 of 19 judged answers.
+Judge: 3 calls per judged answer, the majority decides. The calls disagreed on 3 of 19 judged answers.
 
-- `length_why` run 1: judge disagreed: 1 of 3 said grounded, majority not grounded; dissent: All figures (rank 4 of 10, score 63.7, component values and percentiles, passenger change, competitor scores, data period, caveats) match the evidence; the remaining statements are reasonable interpretations of it.
+- `sfo_unmet` run 1: judge disagreed: 1 of 3 said grounded, majority not grounded; dissent: All figures (load factor, months at or above 85%, growth rates, 2019 recovery, per-runway traffic, score, percentiles, main driver) match the evidence, and the caveats are reflected accurately. The note that the data lacks delay and route-level information is not stated outright in the evidence, but neither tool returned any such data.
+- `methodology` run 1: judge disagreed: 1 of 3 said grounded, majority not grounded; dissent: The range, method, weights, data windows, as-of date, exclusions and not-scored rules all match the methodology output. The only addition is the loose phrase "demand pressure on terminals", which is a general description and not a stated figure or policy.
+- `length_why` run 1: judge disagreed: 1 of 3 said grounded, majority not grounded; dissent: All scores, ranks, component points, growth figure, data periods and caveats match the tool output, and the tied 0.25 weight on growth is a minor wording issue.
 
 Warnings (style, not counted as failures):
 
-- `ne_ranking` run 1: answer has 212 words, aim for 200
-- `la_vs_sna` run 1: answer has 210 words, aim for 200
-- `sfo_unmet` run 2: answer has 294 words, aim for 250
+- `ne_ranking` run 1: answer has 209 words, aim for 200
+- `la_vs_sna` run 1: answer has 211 words, aim for 200
+- `sfo_unmet` run 1: answer has 260 words, aim for 250
+- `sfo_unmet` run 2: answer has 270 words, aim for 250

@@ -78,3 +78,56 @@ async def test_a_partial_weight_override_is_applied_and_reported_by_the_code(ana
     assert used["growth"] == 0.6
     assert sum(used.values()) == pytest.approx(1, abs=0.002)
     assert used["load_factor"] == pytest.approx(0.25 / 0.75 * 0.4, abs=0.001)
+
+
+# ---------- explanation fields: computed in code so the model never reads raw numbers ----------
+
+
+async def test_points_add_up_to_the_score_and_main_driver_is_the_largest(analytics):
+    result = await analytics.rank("New England", None, 5, {"growth": 0.6})
+
+    for row in result["ranking"]:
+        assert sum(row["points"].values()) == pytest.approx(row["score"], abs=0.3)
+        top = max(row["points"].values())
+        assert row["points"][row["main_driver"]] == top
+    # the override is reflected: points use the weights actually used
+    first = result["ranking"][0]
+    pct = first["components"]["growth"]["percentile"]
+    assert first["points"]["growth"] == pytest.approx(0.6 * pct, abs=0.1)
+
+
+async def test_leaders_by_component_match_the_values_returned(analytics):
+    result = await analytics.rank("New England", None, 5, None)
+    leaders = result["leaders_by_component"]
+
+    for component, entry in leaders.items():
+        values = {r["iata"]: r["components"][component]["value"] for r in result["ranking"]}
+        winners = entry["leader"] if isinstance(entry["leader"], list) else [entry["leader"]]
+        assert all(values[w] == max(values.values()) for w in winners)
+        assert entry["value"] == max(values.values())
+
+
+async def test_score_spread_and_range_are_given_by_the_code(analytics):
+    result = await analytics.rank("New England", None, 5, None)
+    scores = [r["score"] for r in result["ranking"]]
+
+    assert result["score_range"] == "0 to 100"
+    assert result["score_spread"]["highest"] == max(scores)
+    assert result["score_spread"]["lowest"] == min(scores)
+    assert result["score_spread"]["difference"] == pytest.approx(
+        max(scores) - min(scores), abs=0.11
+    )
+
+
+async def test_compare_and_profile_carry_the_explanation_fields(analytics):
+    compare = await analytics.compare(["LAX", "SNA"])
+    profile = (await analytics.profile("SFO"))["score"]
+
+    for row in compare["airports"]:
+        assert sum(row["points"].values()) == pytest.approx(row["score"], abs=0.3)
+        assert row["main_driver"] in row["points"] or row["main_driver"].startswith("tie")
+    assert set(compare["leaders_by_component"]) == set(compare["airports"][0]["points"])
+    assert compare["score_range"] == "0 to 100"
+    assert compare["score_spread"]["highest"] >= compare["score_spread"]["lowest"]
+    assert profile["score_range"] == "0 to 100"
+    assert sum(profile["points"].values()) == pytest.approx(profile["value"], abs=0.3)

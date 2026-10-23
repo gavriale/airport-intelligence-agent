@@ -34,6 +34,7 @@ from domain.search import search_airports
 
 DAYS_PER_YEAR = 365
 MAX_COMPARE = 5
+SCORE_RANGE = "0 to 100"
 CLOSURE_KIND = "Airport Closures"  # the FAA feed's name for closure notices
 RATIO_METRICS = (
     "passengers",
@@ -232,6 +233,46 @@ class Analytics:
             for c in COMPONENTS
         }
 
+    @staticmethod
+    def _points(components: Mapping, weights: Mapping[str, float]) -> dict:
+        """What each component contributed to the score: weight x percentile. The points add up
+        to the score (within rounding), and the largest one is the main driver."""
+        points = {c: weights[c] * components[c].percentile for c in COMPONENTS}
+        top = max(points.values())
+        drivers = [c for c, v in points.items() if _round(v) == _round(top)]
+        return {
+            "points": {c: _round(v) for c, v in points.items()},
+            "main_driver": drivers[0] if len(drivers) == 1 else "tie: " + ", ".join(drivers),
+        }
+
+    @staticmethod
+    def _leaders(by_airport: Mapping[str, Mapping]) -> dict:
+        """The airport with the highest value on each score component among those returned
+        (all of them on a tie)."""
+        out = {}
+        for c in COMPONENTS:
+            values = {i: comp[c].value for i, comp in by_airport.items()}
+            top = max(values.values())
+            winners = [i for i, v in values.items() if v == top]
+            out[c] = {
+                "leader": winners[0] if len(winners) == 1 else winners,
+                "value": _round(top, 2),
+            }
+        return out
+
+    @staticmethod
+    def _spread(scores: Sequence[float]) -> dict:
+        """Score range of the scale and the spread between the airports returned."""
+        high, low = max(scores), min(scores)
+        return {
+            "score_range": SCORE_RANGE,
+            "score_spread": {
+                "highest": _round(high),
+                "lowest": _round(low),
+                "difference": _round(high - low),
+            },
+        }
+
     # ---------- analyses ----------
 
     async def search(
@@ -278,7 +319,9 @@ class Analytics:
         score = (
             {
                 "value": _round(weighted_score(scored, weights)),
+                "score_range": SCORE_RANGE,
                 "components": self._components_out(scored, weights),
+                **self._points(scored, weights),
                 "compared_with_airports": snap.national.reference_size,
                 "compared_with": (
                     f"{snap.national.reference_size} scored peer airports nationally"
@@ -324,9 +367,20 @@ class Analytics:
                 "passengers_added": snap.kpis[r.iata].passengers_added,
                 "passenger_growth_pct": _round(snap.kpis[r.iata].passenger_growth_pct),
                 "components": self._components_out(snap.national.components[r.iata], weights),
+                **self._points(snap.national.components[r.iata], weights),
             }
             for r in ranking[:top_n]
         ]
+        extras = (
+            {
+                "leaders_by_component": self._leaders(
+                    {row["iata"]: snap.national.components[row["iata"]] for row in shown}
+                ),
+                **self._spread([row["score"] for row in shown]),
+            }
+            if shown
+            else {}
+        )
         return self._envelope(
             snap,
             {
@@ -334,6 +388,7 @@ class Analytics:
                 "scope": region or (", ".join(scope_states) if scope_states else "national"),
                 "scored_airports_in_scope": len(ranking),
                 "ranking": shown,
+                **extras,
                 "not_scored": [
                     {**self._airport_summary(snap.airports[i]), "reasons": reasons}
                     for i, reasons in sorted(not_scored.items())
@@ -352,7 +407,7 @@ class Analytics:
             raise ToolExecutionError("invalid_arguments", f"Give 2 to {MAX_COMPARE} airports.")
         weights = normalize_weights(self._config.scoring.weights, None)
         snap = await self._load()
-        rows, comparable = [], {}
+        rows, comparable, scored_components = [], {}, {}
         for code in codes:
             _, airport = await self._peer(code)
             kpis = snap.kpis[code]
@@ -363,8 +418,11 @@ class Analytics:
                     "runways": self._runways(airport),
                     **self._kpi_summary(kpis),
                     "score": _round(weighted_score(scored, weights)) if scored else None,
+                    **(self._points(scored, weights) if scored else {}),
                 }
             )
+            if scored:
+                scored_components[code] = scored
             comparable[code] = self._kpi_summary(kpis)
         return self._envelope(
             snap,
@@ -372,6 +430,14 @@ class Analytics:
                 "score_name": self._config.scoring.score_name,
                 "airports": rows,
                 "comparison_by_metric": self._comparison(comparable),
+                **(
+                    {
+                        "leaders_by_component": self._leaders(scored_components),
+                        **self._spread([r["score"] for r in rows if r["score"] is not None]),
+                    }
+                    if len(scored_components) >= 2
+                    else {}
+                ),
             },
             ["data", "congestion", "cargo", "score"],
         )
