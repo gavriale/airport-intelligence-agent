@@ -10,7 +10,7 @@ import time
 
 from pydantic import BaseModel
 
-from core.errors import LLMError
+from core.errors import LLMError, LLMFatalError
 from core.interfaces import LLMProvider, LLMResponse, Message, SessionStore, ToolCall, ToolResult
 from core.logging import log_event
 from core.logging import session_id as session_id_var
@@ -81,6 +81,8 @@ class Agent:
         new_messages = [Message(role="user", content=user_text)]
         try:
             reply = await self._loop(session, new_messages, stats)
+        except LLMFatalError as exc:
+            return self._finish(stats, exc.user_message, failed=True)
         except LLMError:
             reply = None
 
@@ -123,13 +125,17 @@ class Agent:
         return response
 
     async def _call_llm(self, history: list[Message]) -> LLMResponse:
-        """Timeout per attempt; retry with backoff; raise LLMError when attempts run out."""
+        """Timeout per attempt; retry with backoff; raise LLMError when attempts run out. A fatal
+        error (rejected key, unknown model) is raised at once."""
         for attempt in range(self._llm_retries + 1):
             try:
                 async with asyncio.timeout(self._llm_timeout_s):
                     return await self._llm.complete(
                         self._system_prompt, history, self._tools.specs()
                     )
+            except LLMFatalError:
+                log_event("llm_failed", logging.ERROR, exc_info=True, attempts=attempt + 1)
+                raise  # a retry cannot fix a rejected key or an unknown model
             except (TimeoutError, LLMError) as exc:
                 if attempt == self._llm_retries:
                     log_event("llm_failed", logging.ERROR, exc_info=True, attempts=attempt + 1)

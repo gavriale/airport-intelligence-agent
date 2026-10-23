@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    anthropic_api_key: SecretStr
+    # Blank is allowed: /chat then answers 503 and /ranking still works.
+    anthropic_api_key: SecretStr = SecretStr("")
     model: str = "claude-sonnet-5-5"
     llm_timeout_s: float = 30
     log_format: Literal["console", "json"] = "json"

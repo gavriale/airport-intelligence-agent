@@ -184,3 +184,15 @@ async def test_the_page_keeps_the_session_id_in_session_storage_not_local_storag
     assert "sessionStorage" in page
     assert "localStorage" not in page
     assert "/sessions/" in page  # restores the history on load
+
+
+async def test_a_missing_api_key_variable_behaves_like_a_blank_one(monkeypatch):
+    from app.container import build_container
+    from app.settings import Settings
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    settings = Settings(data_backend="memory", _env_file=None)
+    container = await build_container(settings)
+
+    assert settings.anthropic_api_key.get_secret_value() == ""
+    assert container.agent is None

@@ -24,7 +24,8 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 - **Chosen:** The adapter turns SDK errors into `LLMError` and disables the SDK's own retries. The agent applies a timeout per attempt, one retry with backoff, then a fallback reply. The tool registry applies a timeout and one retry to unexpected errors and returns every failure as a structured error result. A failed turn is not saved.
 - **Why:** One place owns the timeout and retry policy, so total latency is predictable. Tools are read-only, so a retry is always safe.
 - **Alternatives considered:** SDK built-in retries (hidden, they stack with ours).
-- **Tradeoff / when I'd change it:** Every `LLMError` is retried, including permanent ones such as a bad API key. Production should retry only transient errors (5xx, 429, timeouts).
+- **Error classes:** only timeouts, connection problems, rate limits (429) and 5xx are retried. A rejected key (401/403), an unknown model (404) or any other 4xx raises `LLMFatalError`: no retry, the user gets a specific message ("The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env." or "Model <name> is not available for this API key. Set MODEL in .env."), and the real error is logged. A missing `ANTHROPIC_API_KEY` is treated like a blank one (`/chat` returns 503, `/ranking` still works). Checked against the real API: a bad key and an unknown model each fail in about 0.3 s with these messages.
+- **Tradeoff / when I'd change it:** Only Anthropic is supported; another provider needs a new adapter that classifies its own errors the same way. Which statuses count as retryable is a judgment (408, 409, 429 and 5xx here).
 
 ## Model choice: `claude-sonnet-5-5`, configurable
 - **Chosen:** A mid-size model by default, set with `MODEL` in `.env`.

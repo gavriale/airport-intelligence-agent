@@ -10,7 +10,7 @@ The agent loop is written by hand (no agent framework). The model chooses tools 
 
 ## Run it
 
-**With a key (full chat).**
+**With a key (full chat).** Requires an Anthropic API key; other providers are not supported (the `LLMProvider` interface allows adding one). Set `MODEL` in `.env` if your account does not have the default model.
 
 ```bash
 cp .env.example .env        # then put your ANTHROPIC_API_KEY in .env

@@ -2,7 +2,17 @@
 
 
 class LLMError(Exception):
-    """Any provider failure (network, rate limit, 5xx). Adapters wrap SDK errors in this."""
+    """A provider failure worth retrying (network, timeout, rate limit, 5xx). Adapters wrap SDK
+    errors in this."""
+
+
+class LLMFatalError(LLMError):
+    """A provider failure that a retry cannot fix (rejected key, unknown model, bad request).
+    `user_message` is what the user is told; the exception text keeps the real error for logs."""
+
+    def __init__(self, user_message: str, detail: str) -> None:
+        super().__init__(detail)
+        self.user_message = user_message
 
 
 class ToolExecutionError(Exception):

@@ -2,11 +2,15 @@ import logging
 
 import anthropic
 
-from core.errors import LLMError
+from core.errors import LLMError, LLMFatalError
 from core.interfaces import LLMResponse, Message, ToolCall, ToolSpec
 from core.logging import log_event
 
 MAX_OUTPUT_TOKENS = 2048
+KEY_REJECTED = "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env."
+MODEL_UNAVAILABLE = "Model {model} is not available for this API key. Set MODEL in .env."
+REQUEST_REJECTED = "The model request was rejected (HTTP {status}). See the server logs."
+RETRYABLE_CLIENT_STATUSES = {408, 409, 429}  # timeout, conflict, rate limit
 
 
 class AnthropicLLM:
@@ -36,7 +40,7 @@ class AnthropicLLM:
                 **kwargs,
             )
         except anthropic.APIError as exc:
-            raise LLMError(str(exc)) from exc
+            raise self._classify(exc) from exc
         usage = response.usage
         log_event(
             "llm_usage",
@@ -70,6 +74,19 @@ class AnthropicLLM:
             cache_read_tokens=usage.cache_read_input_tokens or 0,
             cache_write_tokens=usage.cache_creation_input_tokens or 0,
         )
+
+    def _classify(self, exc: anthropic.APIError) -> LLMError:
+        """Only timeouts, connection problems, rate limits and 5xx are retryable. A rejected key,
+        an unknown model or any other 4xx would fail the same way again."""
+        if isinstance(exc, anthropic.AuthenticationError | anthropic.PermissionDeniedError):
+            return LLMFatalError(KEY_REJECTED, str(exc))
+        if isinstance(exc, anthropic.NotFoundError):
+            return LLMFatalError(MODEL_UNAVAILABLE.format(model=self._model), str(exc))
+        if isinstance(exc, anthropic.APIStatusError):
+            status = exc.status_code
+            if status < 500 and status not in RETRYABLE_CLIENT_STATUSES:
+                return LLMFatalError(REQUEST_REJECTED.format(status=status), str(exc))
+        return LLMError(str(exc))
 
 
 def _to_api_message(message: Message) -> dict:

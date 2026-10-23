@@ -102,7 +102,7 @@ Built with Claude Code; design decisions, data validation and review are mine.
 - **Proxies over false precision.** A confident long-haul percentage or "unmet demand" figure would be invented.
 - **Judgmental weights.** Honest and adjustable, but not validated against expansion outcomes; that needs a labelled history I do not have.
 - **Sessions in Postgres.** Already running, so no new service, and conversations survive restarts. Not built: Redis with a TTL for live state with Postgres for permanent transcripts; concurrent requests on one session are last-write-wins.
-- **Reliability:** 30 s model and 10 s tool timeouts, each with one retry, then a graceful message.
+- **Reliability:** 30 s model and 10 s tool timeouts, each with one retry (only timeouts, rate limits and 5xx are retried), then a graceful message. A rejected key or unknown model is not retried and returns a specific message.
 
 ## 8. Evaluation
 
