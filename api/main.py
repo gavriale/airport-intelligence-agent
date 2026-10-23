@@ -4,13 +4,15 @@ import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.container import Container, build_container
 from app.settings import Settings
+from core.errors import ToolExecutionError
 from core.logging import configure_logging, correlation_id
 
 MAX_MESSAGE_CHARS = 2000
@@ -47,7 +49,7 @@ def create_app(container: Container | None = None) -> FastAPI:
             if owned:
                 await app.state.container.close()
 
-    app = FastAPI(title="Customer-service agent", lifespan=lifespan)
+    app = FastAPI(title="Airport investment analyst", lifespan=lifespan)
     if container is not None:
         app.state.container = container
 
@@ -58,6 +60,18 @@ def create_app(container: Container | None = None) -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/ranking")
+    async def ranking(
+        region: str | None = None,
+        state: Annotated[list[str] | None, Query()] = None,
+        top_n: Annotated[int, Query(ge=1, le=50)] = 10,
+    ) -> dict:
+        """The deterministic Expansion Pressure ranking. No model involved, so no API key needed."""
+        try:
+            return await app.state.container.analytics.rank(region, state, top_n, None)
+        except ToolExecutionError as exc:
+            raise HTTPException(400, detail={"code": exc.code, "message": exc.message}) from exc
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(request: ChatRequest) -> ChatResponse:

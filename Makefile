@@ -4,13 +4,13 @@ run:
 	docker compose up --build
 
 chat:
-	$(PY) cli.py
+	DATA_BACKEND=memory $(PY) cli.py
 
 test:
 	$(PY) -m pytest -q
 
 eval:
-	$(PY) -m evals.runner
+	DATA_BACKEND=memory $(PY) -m evals.runner
 
 ingest:
 	$(PY) -m scripts.ingest

@@ -9,9 +9,11 @@ async def _noop():
     return None
 
 
-async def test_chat_roundtrip_and_health_with_fake_llm(rig):
+async def test_chat_roundtrip_and_health_with_fake_llm(rig, analytics):
     r = rig([say("Hello!"), say("Still here.")])
-    app = create_app(Container(agent=r.agent, sessions=r.sessions, close=_noop))
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -29,9 +31,11 @@ async def test_chat_roundtrip_and_health_with_fake_llm(rig):
     assert len(r.llm.calls[1][1]) == 3  # second call saw the first exchange
 
 
-async def test_empty_message_is_rejected(rig):
+async def test_empty_message_is_rejected(rig, analytics):
     r = rig([])
-    app = create_app(Container(agent=r.agent, sessions=r.sessions, close=_noop))
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -41,9 +45,11 @@ async def test_empty_message_is_rejected(rig):
     assert response.status_code == 422
 
 
-async def test_chat_page_is_served(rig):
+async def test_chat_page_is_served(rig, analytics):
     r = rig([])
-    app = create_app(Container(agent=r.agent, sessions=r.sessions, close=_noop))
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -52,3 +58,39 @@ async def test_chat_page_is_served(rig):
 
     assert response.status_code == 200
     assert "<form" in response.text
+
+
+async def test_ranking_endpoint_works_without_a_model(rig, analytics):
+    r = rig([])  # the fake model has no script: any model call would fail
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/ranking", params={"region": "New England", "top_n": 3})
+
+    body = response.json()
+    assert response.status_code == 200
+    assert [x["rank"] for x in body["ranking"]] == [1, 2, 3]
+    assert body["as_of"] == "Apr 2026"
+    assert body["caveats"]
+    assert r.llm.calls == []
+
+
+async def test_ranking_endpoint_reports_bad_input_clearly(rig, analytics):
+    r = rig([])
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        unknown = await client.get("/ranking", params={"region": "Narnia"})
+        too_big = await client.get("/ranking", params={"top_n": 500})
+
+    assert unknown.status_code == 400
+    assert unknown.json()["detail"]["code"] == "unknown_region"
+    assert too_big.status_code == 422

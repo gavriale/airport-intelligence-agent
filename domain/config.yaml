@@ -1,0 +1,70 @@
+# Scoring settings, definitions and the caveat texts the tools attach to their answers.
+
+scoring:
+  weights:                     # weighted national percentiles; must sum to 1
+    growth: 0.25
+    load_factor: 0.25
+    pax_per_runway: 0.20
+    demand_gap: 0.15
+    scale: 0.10
+    peak: 0.05
+  window_months: 12            # trailing window; compared with the 12 months before it
+  high_load_factor_pct: 85     # a month at or above this counts as "full"
+  cargo_seat_threshold: 20     # international departures averaging fewer seats are mostly cargo
+
+regions:
+  New England: [CT, MA, ME, NH, RI, VT]
+
+# Common names that are not an airport name or a city.
+aliases:
+  la: [LAX]
+  los angeles: [LAX]
+  nyc: [JFK, LGA, EWR]
+  new york city: [JFK, LGA, EWR]
+  dc: [DCA, IAD]
+  washington dc: [DCA, IAD]
+
+metrics:
+  - key: growth
+    label: Passenger growth
+    definition: Passengers boarding in the last 12 months compared with the 12 months before, in percent.
+  - key: load_factor
+    label: Load factor
+    definition: Passengers divided by seats over the last 12 months, in percent. Months with no seats are left out, not counted as zero.
+  - key: pax_per_runway
+    label: Passengers per runway
+    definition: Passengers in the last 12 months divided by the number of open runways. A rough capacity-pressure proxy.
+  - key: demand_gap
+    label: Demand gap
+    definition: Passenger growth minus seat growth, in percentage points. Positive means passengers grew faster than airlines added seats.
+  - key: scale
+    label: Scale
+    definition: Passengers in the last 12 months. Larger airports have more at stake.
+  - key: peak
+    label: Peak-month ratio
+    definition: Busiest month's passengers divided by the average month. A higher value means a more peaked year.
+
+# Texts attached to tool results. {placeholders} are filled in by the code.
+caveats:
+  data:
+    - "Source: BTS T-100 monthly data, counted by origin airport. The latest month is {as_of}, so the data is about six months old."
+  score:
+    - "The score measures demand pressure (growth, utilization, load), not physical terminal capacity. No terminal, gate or construction data is available."
+    - "Runway count is only a rough capacity proxy. It counts every open runway, including short general-aviation runways."
+    - "The weights are judgmental and configurable. 'Profitable' is not measured."
+  congestion:
+    - "Congestion here means how heavily runways and seats are used. No delay history is available; FAA live status is a snapshot, not a trend."
+  unmet_demand:
+    - "Unmet demand is not measured directly. These are signals that demand may exceed capacity. Any explanation of why is a hypothesis, not a finding."
+  long_haul:
+    - "The exact share of long-haul flights cannot be computed from public API data, because route-level distances are not available."
+    - "The international share of departures is an approximation: it overcounts short international flights (for example to Canada) and undercounts long domestic ones."
+  cargo:
+    - "Departure counts include all-cargo flights. Passengers, seats and load factor are not affected."
+  cargo_international:
+    - "International departures from this airport average {seats:.1f} seats per flight, so they are mostly all-cargo flights. The international share and the average distance describe cargo as much as passenger service."
+  live:
+    - "The FAA lists only airports with an active delay program or closure. Not being listed means no reported delay, not missing data."
+    - "Closure entries are NOTAM text and may apply to only some aircraft (for example general aviation). Read the reason."
+  not_peer:
+    - "{iata} is not in the peer set (fewer than {minimum:,} passengers in the last 12 months), so there is no traffic analysis for it."

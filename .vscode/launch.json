@@ -9,6 +9,7 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
+        "DATA_BACKEND": "memory",
         "LLM_TIMEOUT_S": "3600",
         "TOOL_TIMEOUT_S": "3600"
       }
@@ -22,6 +23,7 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
+        "DATA_BACKEND": "memory",
         "LLM_TIMEOUT_S": "3600",
         "TOOL_TIMEOUT_S": "3600"
       }

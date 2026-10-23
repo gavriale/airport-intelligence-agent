@@ -1,6 +1,3 @@
-import csv
-import hashlib
-import json
 from collections.abc import Callable, Sequence
 from datetime import date
 from pathlib import Path
@@ -8,9 +5,16 @@ from typing import Any
 
 import asyncpg
 
+from adapters.snapshot_files import (
+    AIRPORT_COLUMNS,
+    RUNWAY_COLUMNS,
+    TRAFFIC_COLUMNS,
+    read_meta,
+    read_records,
+    snapshot_hash,
+)
 from domain.repository import Airport, MonthlyTraffic, SnapshotInfo
 
-SNAPSHOT_FILES = ("airports.csv", "runways.csv", "airport_month.csv", "snapshot_meta.json")
 LOAD_LOCK_ID = 42  # serializes loaders when several API replicas start together
 
 _AIRPORTS_SQL = """
@@ -59,7 +63,7 @@ class PostgresRepository:
         Idempotent: a snapshot that is already loaded (same hash) is skipped. The replacement
         runs in one transaction, so readers see the old data until the new data is complete.
         Returns True if data was loaded."""
-        digest = _snapshot_hash(snapshot_dir)
+        digest = snapshot_hash(snapshot_dir)
         async with self._pool.acquire() as conn, conn.transaction():
             await conn.execute("SELECT pg_advisory_xact_lock($1)", LOAD_LOCK_ID)
             await conn.execute(schema_path.read_text(encoding="utf-8"))
@@ -68,9 +72,9 @@ class PostgresRepository:
                 return False
 
             await conn.execute("TRUNCATE airport_month, runways, airports")
-            await _copy(conn, "airports", snapshot_dir / "airports.csv", _AIRPORT_COLUMNS)
-            await _copy(conn, "runways", snapshot_dir / "runways.csv", _RUNWAY_COLUMNS)
-            await _copy(conn, "airport_month", snapshot_dir / "airport_month.csv", _TRAFFIC_COLUMNS)
+            await _copy(conn, "airports", snapshot_dir / "airports.csv", AIRPORT_COLUMNS)
+            await _copy(conn, "runways", snapshot_dir / "runways.csv", RUNWAY_COLUMNS)
+            await _copy(conn, "airport_month", snapshot_dir / "airport_month.csv", TRAFFIC_COLUMNS)
             await _store_meta(conn, snapshot_dir, digest)
         return True
 
@@ -108,53 +112,15 @@ class PostgresRepository:
 # ---------- snapshot loading helpers ----------
 
 
-def _text(value: str) -> str | None:
-    return value or None
-
-
-def _int(value: str) -> int | None:
-    return round(float(value)) if value else None
-
-
-def _float(value: str) -> float | None:
-    return float(value) if value else None
-
-
-def _bool(value: str) -> bool:
-    return value == "true"
-
-
-# column name -> converter from the CSV text
-_AIRPORT_COLUMNS: dict[str, Callable[[str], Any]] = {
-    "iata": str, "ident": str, "name": str, "city": _text, "state": str,
-    "latitude": float, "longitude": float, "elevation_ft": _int, "type": str,
-    "scheduled_service": _bool,
-}  # fmt: skip
-_RUNWAY_COLUMNS: dict[str, Callable[[str], Any]] = {
-    "airport_iata": str, "runway": str, "length_ft": _int, "width_ft": _int,
-    "surface": _text, "lighted": _bool,
-}  # fmt: skip
-_TRAFFIC_COLUMNS: dict[str, Callable[[str], Any]] = {
-    "iata": str, "month": date.fromisoformat, "departures": int, "passengers": int,
-    "seats": int, "domestic_departures": int, "international_departures": int,
-    "international_seats": int, "avg_flight_distance_mi": _float,
-    "avg_domestic_distance_mi": _float, "freight_lbs": int,
-}  # fmt: skip
-
-
 async def _copy(
     conn: asyncpg.Connection, table: str, path: Path, columns: dict[str, Callable[[str], Any]]
 ) -> None:
-    with path.open(encoding="utf-8", newline="") as f:
-        records = [
-            tuple(convert(row[name]) for name, convert in columns.items())
-            for row in csv.DictReader(f)
-        ]
+    records = read_records(path, columns)
     await conn.copy_records_to_table(table, records=records, columns=list(columns))
 
 
 async def _store_meta(conn: asyncpg.Connection, snapshot_dir: Path, digest: str) -> None:
-    meta = json.loads((snapshot_dir / "snapshot_meta.json").read_text(encoding="utf-8"))
+    meta = read_meta(snapshot_dir)
     values = {
         "hash": digest,
         "latest_period": meta["latest_period"],
@@ -167,12 +133,3 @@ async def _store_meta(conn: asyncpg.Connection, snapshot_dir: Path, digest: str)
     await conn.executemany(
         "INSERT INTO snapshot_meta (key, value) VALUES ($1, $2)", list(values.items())
     )
-
-
-def _snapshot_hash(snapshot_dir: Path) -> str:
-    digest = hashlib.sha256()
-    for name in SNAPSHOT_FILES:
-        digest.update(name.encode())
-        # Line endings are normalised so the hash is the same on Windows and Linux checkouts.
-        digest.update((snapshot_dir / name).read_bytes().replace(b"\r\n", b"\n"))
-    return digest.hexdigest()

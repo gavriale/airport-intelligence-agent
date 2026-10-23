@@ -6,14 +6,14 @@ The agent loop is written by hand (no agent framework). The model chooses tools 
 
 ## Status
 
-Work is staged. **Stages 1 and 2 are done: the placeholder domain was removed, and the airport data layer (snapshot, schema, repository) is in place. There are no airport tools yet, so the agent cannot answer data questions.**
+Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** Evals and the final docs are still to do.
 
 | Stage | State |
 |---|---|
 | 1. Strip the old domain, rewrite instructions | done |
 | 2. Data layer: schema, ingest, committed snapshot, repository | done |
-| 3. Scoring and airport tools | next |
-| 4. Prompt, API and chat UI polish | partly in place (chat UI and API run, but there are no airport tools yet) |
+| 3. Scoring and airport tools | done |
+| 4. Prompt, API and chat UI polish | prompt and `GET /ranking` done; the chat page works but is plain |
 | 5. Evals (no cases yet) | not started |
 | 6. Docs and presentation | not started |
 
@@ -32,7 +32,8 @@ Without Docker, with the project virtualenv:
 
 ```bash
 pip install -e ".[dev]"
-python cli.py        # interactive demo (needs Postgres: docker compose up -d postgres)
+DATA_BACKEND=memory python cli.py   # interactive demo without Docker (or: make chat)
+curl "localhost:8000/ranking?region=New%20England"   # deterministic ranking, no model, no API key
 make test            # unit and API tests (fake model, no network); Postgres tests skip if it is not running
 make lint
 make ingest          # rebuild domain/data/ from the public APIs (needs internet, about a minute)

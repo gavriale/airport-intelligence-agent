@@ -56,7 +56,8 @@ An investment firm wants an agent that helps analysts find US airports where ren
 │   ├── tools.py           # registry, validation, timeouts, structured errors
 │   ├── session.py         # conversation history
 │   ├── errors.py, logging.py
-├── adapters/              # anthropic_llm, fake_llm, llm_cache, memory_session_store, postgres_repository
+├── adapters/              # anthropic_llm, fake_llm, llm_cache, memory_session_store,
+│                          # postgres_repository, memory_repository, snapshot_files, faa_status
 ├── app/                   # settings.py, container.py (composition root)
 ├── api/                   # main.py, static/index.html
 ├── domain/                # everything airport-specific
@@ -64,6 +65,8 @@ An investment firm wants an agent that helps analysts find US airports where ren
 │   ├── system_prompt.md
 │   ├── tools.py           # airport tools
 │   ├── scoring.py         # deterministic KPIs and score (pure functions)
+│   ├── metrics.py, search.py, config.py, live_status.py
+│   ├── analytics.py       # the analyses behind the tools and /ranking
 │   ├── repository.py      # AirportRepository interface and record models
 │   ├── data/              # schema.sql, airports.csv, runways.csv, airport_month.csv, snapshot_meta.json
 │   └── eval_cases.yaml
@@ -107,7 +110,7 @@ Assumptions to state with every ranking: data as-of month; origin passengers app
 
 ## Tools (read-only)
 
-`search_airports`, `get_airport_profile`, `rank_airports`, `compare_airports`, `get_traffic_trend`, `get_distance_profile`, `demand_pressure`, `get_live_status`, `get_methodology`. No tool takes free-form SQL. Each tool returns small, explicit results including the as-of month and any caveats.
+`search_airports`, `get_airport_profile`, `rank_airports`, `compare_airports`, `get_distance_profile`, `demand_pressure`, `get_live_status`, `get_methodology`. No tool takes free-form SQL. Each tool returns small, explicit results including `as_of` and a `caveats` list; the caveat texts live in `domain/config.yaml`. `GET /ranking` returns the same deterministic ranking with no model, for reviewers without an API key.
 
 ## Core requirements
 
@@ -138,6 +141,6 @@ Identity verification, write actions with confirmation and idempotency, escalati
 - Work in stages; after each stage run tests and lint, summarize, update `docs/DECISIONS.md`, and **stop for review** where I ask.
 - Commit at the end of a stage with a clear message. Do not push.
 - Do not spend live-model tokens or download large files without asking. Say clearly what is not verified.
-- Build order: (1) strip old domain and rewrite instructions [done], (2) data layer: schema, ingest, snapshot, repository [done], (3) scoring and tools, (4) prompt, API and UI, (5) evals, (6) docs and presentation.
+- Build order: (1) strip old domain and rewrite instructions [done], (2) data layer: schema, ingest, snapshot, repository [done], (3) scoring and tools [done], (4) prompt, API and UI, (5) evals, (6) docs and presentation.
 - At the docs stage every document with a "Stale" banner is rewritten or deleted. `docs/SWAP_GUIDE.md` is deleted.
 - The learning guides and this file are marked `export-ignore` in `.gitattributes`, so `git archive` leaves them out of the submission.

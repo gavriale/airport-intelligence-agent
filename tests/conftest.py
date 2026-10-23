@@ -1,14 +1,22 @@
 import asyncio
+from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
 
 from adapters.fake_llm import FakeLLMProvider
+from adapters.memory_repository import MemoryRepository
 from adapters.memory_session_store import MemorySessionStore
 from core.agent import Agent
 from core.errors import ToolExecutionError
 from core.interfaces import LLMResponse, ToolCall
 from core.tools import Tool, ToolRegistry
+from domain.analytics import Analytics
+from domain.config import load_config
+from domain.live_status import LiveEvent, LiveStatus, LiveStatusUnavailable
+
+DOMAIN = Path(__file__).resolve().parent.parent / "domain"
+DATA = DOMAIN / "data"
 
 
 def say(text: str) -> LLMResponse:
@@ -92,3 +100,26 @@ def rig():
         return Rig(script, **kwargs)
 
     return make
+
+
+class FakeLiveStatus:
+    """Live status without the network: LAX has a ground delay, everything else is quiet."""
+
+    def __init__(self, *, fail: bool = False) -> None:
+        self._fail = fail
+
+    async def get_status(self) -> LiveStatus:
+        if self._fail:
+            raise LiveStatusUnavailable("FAA feed unreachable")
+        event = LiveEvent(kind="Ground Delay Programs", details={"Reason": "rain", "Avg": "1 hour"})
+        return LiveStatus(updated="Fri Oct 23 06:42:01 2026 GMT", events={"LAX": [event]})
+
+
+@pytest.fixture(scope="session")
+def memory_repo():
+    return MemoryRepository(DATA)
+
+
+@pytest.fixture
+def analytics(memory_repo):
+    return Analytics(memory_repo, FakeLiveStatus(), load_config(DOMAIN / "config.yaml"))

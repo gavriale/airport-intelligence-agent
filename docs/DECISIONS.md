@@ -43,11 +43,40 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 - **Why:** The loop and the sessions stay provider-independent, and the fake model can script tool calls.
 - **Tradeoff / when I'd change it:** A small conversion layer to maintain.
 
-## Numbers come from code, words from the model (planned for the scoring stage)
+## Numbers come from code, words from the model
 - **Chosen:** Every figure the agent shows comes from a tool result computed by deterministic code (`domain/scoring.py`). The model chooses tools and explains; it does not calculate, rank or recall data. The system prompt says so, and evals check that answers are supported by tool output.
 - **Why:** The assignment requires deterministic ranking logic, and an analyst must be able to reproduce any number. It also removes the largest hallucination risk.
 - **Alternatives considered:** Letting the model rank from raw tables (not reproducible, error-prone).
-- **Tradeoff / when I'd change it:** The model can still misquote a tool result, so groundedness is evaluated rather than assumed.
+- **Tradeoff / when I'd change it:** The model can still misquote a tool result or do small arithmetic of its own (in the demo run it computed ratios such as "3.3 times"), so groundedness is evaluated rather than assumed. The fix is to return such ratios from the tool.
+
+## Expansion Pressure Score: national percentiles, configurable weights
+- **Chosen:** Six components over the last 12 months compared with the 12 before: passenger growth, load factor, passengers per runway, demand gap (passenger growth minus seat growth), scale and peak-month ratio. Each becomes a mid-rank percentile against all scored peer airports nationally. The score is the weighted sum of the percentiles (weights 0.25, 0.25, 0.20, 0.15, 0.10, 0.05 in `domain/config.yaml`). A regional ranking orders airports by the national score and does not recompute percentiles inside the region. Callers can override weights; they are rescaled to sum to 1.
+- **Why:** Percentiles put unlike units on one scale without choosing arbitrary bounds. Reusing national percentiles keeps an airport's score the same whatever region it is asked in (a test checks this). Keeping percentiles separate from weights means re-weighting never recomputes anything.
+- **Alternatives considered:** Min-max scaling (one outlier squeezes everyone else); z-scores (assume a bell shape); percentiles inside the region (a small region would make every airport look extreme).
+- **Tradeoff / when I'd change it:** The weights are judgment, not a fitted model, and the answer says so. The score measures demand pressure, not physical terminal capacity, because no terminal or gate data exists in the public sources.
+
+## Missing data means "not scored", never a partial score
+- **Chosen:** An airport is scored only when all six components can be computed from complete data: no missing month in either window, runway data present, seats present. Otherwise it is listed under `not_scored` with the reasons. A month with zero seats leaves load factor undefined for that month; it is not counted as zero.
+- **Why:** Scoring on partial data would put a number in front of an analyst that looks as solid as the others. With the current snapshot all 228 peers are scorable, so the exclusion rules are covered by unit tests on hand-made data, not by real airports.
+- **Tradeoff / when I'd change it:** A seasonal airport with one missing month drops out entirely. A later version could score on the available components and flag it, but that needs a documented rule for rescaling the weights.
+
+## One analytics layer behind the tools and the API
+- **Chosen:** `domain/analytics.py` holds every analysis and returns plain dictionaries with `as_of`, the data window and caveats. The tools are thin wrappers that validate arguments. `GET /ranking` calls the same code with no model. The national KPI table is computed once and cached.
+- **Why:** The same numbers appear whether they come from the chat or the endpoint, and a reviewer without an API key can still see the deterministic ranking. Caveat texts live in one config file instead of being scattered through code.
+- **Tradeoff / when I'd change it:** The cache assumes the snapshot does not change while the process runs; a refresh needs a restart.
+
+## In-memory repository next to Postgres
+- **Chosen:** `MemoryRepository` serves the same snapshot files from memory for unit tests, the CLI and the evals without Docker. Postgres stays the default in docker compose. One contract test file runs against both and checks that they return identical data.
+- **Why:** Tests and demos should not need a database, and the contract test stops the two implementations from drifting apart.
+
+## Live status from the FAA feed
+- **Chosen:** `get_live_status` reads the FAA NAS status XML through a small adapter (standard library, run in a thread). An airport that is not in the feed is reported as "no reported delay programs" with a caveat that this is not missing data. Closure entries carry a caveat that they may apply only to some aircraft.
+- **Why:** The feed lists only airports with an active program, so reading "no entry" as "no data" would mislead. One real closure entry seen during the spike was a general-aviation restriction at LAX, not a delay.
+- **Tradeoff / when I'd change it:** A live snapshot only, no history. A failing feed becomes a clean `live_status_unavailable` error.
+
+## Searching by the names people use
+- **Chosen:** `search_airports` matches IATA codes, a small alias list (for example "LA" gives LAX), cities and airport names, and prefers airports that have traffic data. The model is told to use a clearly main airport and say which one it used, and to ask when several are plausible.
+- **Tradeoff / when I'd change it:** "LA" also returns Las Vegas and other cities that start with those letters. The alias puts LAX first, and the model chose correctly in the demo run.
 
 ## Data sources
 - **Chosen:** BTS T-100 summary by origin airport (Socrata, monthly, no key), OurAirports (airports and runways), and the FAA NAS status feed (live delays, planned tool). Details and the checks behind this are in `docs/DATA_SPIKE.md`.

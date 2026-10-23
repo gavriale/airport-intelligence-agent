@@ -15,4 +15,6 @@ class Settings(BaseSettings):
     llm_cache: bool = False
     tool_timeout_s: float = 10
     max_iterations: int = 6
+    # "memory" serves the committed snapshot files from memory (no Docker needed).
+    data_backend: Literal["postgres", "memory"] = "postgres"
     database_url: str = "postgresql://agent:agent@localhost:5432/agent"
