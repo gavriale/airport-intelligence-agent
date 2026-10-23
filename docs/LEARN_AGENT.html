@@ -1,0 +1,515 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Learn the agent</title><style>
+:root{--bg:#fbfbfa;--fg:#1c1c1c;--muted:#666;--line:#ddd;--card:#fff;--code:#f4f4f2;--code-note:#fff7e0;
+--codec:#e6f0ff;--codeb:#2b6cb0;--modelc:#fff0e0;--modelb:#c2680b;--accent:#0b5cad;--concept:#eef7ee;--concept-b:#3d8b3d;--warn:#fff3cd}
+@media (prefers-color-scheme:dark){:root{--bg:#161616;--fg:#e8e8e8;--muted:#9a9a9a;--line:#3a3a3a;--card:#1f1f1f;--code:#232323;--code-note:#3a3320;
+--codec:#14263d;--codeb:#5fa0e6;--modelc:#3b2a14;--modelb:#e89a43;--accent:#6db3f2;--concept:#17281a;--concept-b:#5cb85c;--warn:#3d3516}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,Segoe UI,Arial,sans-serif}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:28px;max-width:1280px;margin:0 auto;padding:20px}
+nav{position:sticky;top:12px;align-self:start;max-height:96vh;overflow:auto;font-size:14px;border-right:1px solid var(--line);padding-right:12px}
+nav a{display:block;color:var(--accent);text-decoration:none;padding:3px 0}
+nav .sub{padding-left:12px;color:var(--muted)}
+main{min-width:0}
+h1{margin:.2em 0}h2{display:inline;font-size:1.35em}h3{margin:1.4em 0 .4em;border-bottom:1px solid var(--line);padding-bottom:3px}
+summary{cursor:pointer}
+details.sec{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:14px 0}
+code,pre{font:12.5px/1.45 Consolas,Menlo,monospace}
+.code{border:1px solid var(--line);border-radius:6px;margin:10px 0;overflow-x:auto;background:var(--code)}
+.code .ref{font:12px Consolas,monospace;padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted)}
+.code table{border-collapse:collapse;width:100%}
+.code td{vertical-align:top;padding:0 6px}
+.code td.ln{color:var(--muted);text-align:right;user-select:none;width:44px}
+.code td.src{white-space:pre}
+.code td.note{font:13px/1.4 system-ui,sans-serif;min-width:260px;max-width:460px;color:var(--fg)}
+.code tr.noted{background:var(--code-note)}
+details.data{border:1px solid var(--line);border-radius:6px;margin:8px 0;background:var(--card)}
+details.data summary{padding:6px 10px;font-weight:600}
+details.data pre{margin:0;padding:8px 10px;overflow-x:auto;background:var(--code);max-height:520px}
+.src-tag{font-weight:400;font-size:12px;color:var(--muted);margin-left:8px}
+.concept{background:var(--concept);border-left:4px solid var(--concept-b);padding:6px 14px;margin:14px 0;border-radius:4px}
+.concept p{margin:.4em 0}.ctitle{font-weight:700}
+.flow{display:flex;flex-direction:column;align-items:stretch;max-width:760px;margin:12px 0}
+.step{border:2px solid;border-radius:8px;padding:6px 10px}
+.step.code{background:var(--codec);border-color:var(--codeb)}
+.step.model{background:var(--modelc);border-color:var(--modelb)}
+.step .detail{font-size:13px;color:var(--muted);margin-top:2px}
+.badge{display:inline-block;font:700 11px Consolas,monospace;border-radius:4px;padding:1px 6px;margin-right:8px;color:#fff;background:var(--codeb)}
+.step.model .badge{background:var(--modelb)}
+.arrow{text-align:center;color:var(--muted);line-height:1.1}
+.qa details{border:1px solid var(--line);border-radius:6px;margin:6px 0;padding:6px 10px;background:var(--card)}
+.qa p{margin:.4em 0}.ptr{color:var(--muted);font-size:13px}
+.warn{background:var(--warn);border-radius:6px;padding:8px 12px;margin:10px 0}
+.verdict{display:inline-block;font-weight:700;border-radius:4px;padding:0 6px}
+.pending{background:var(--line)}
+table.plain{border-collapse:collapse;margin:8px 0}table.plain td,table.plain th{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.toolbar button{margin-right:6px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;border:0}}
+</style></head><body><div class="wrap"><nav><b>Contents</b><a href="#pass1">Pass 1: tracing one question end to end</a><a class="sub" href="#p1-diagram">The flow, CODE vs MODEL</a><a class="sub" href="#p1-walk">Step-by-step walkthrough</a><a class="sub" href="#p1-data">The actual data</a><a class="sub" href="#p1-concepts">Agent engineering concepts</a><a class="sub" href="#p1-candidates">Candidate changes found</a><a class="sub" href="#p1-qa">Interview questions</a><a class="sub" href="#p1-mine">My 3 questions to you</a></nav><main><h1>Learn the agent: study guide</h1><p>Private study guide for the interview (export-ignore, not in the submission). Code snippets are cut from the repository by script, so they are exact; every snippet shows its file and line numbers as of the commit this file was built from. Built from commit 2e35f6e plus uncommitted changes, if any. Passes done: 1.</p><div class="toolbar"><button id="expand">Expand all</button><button id="collapse">Collapse all</button></div><section id="pass1"><details open class="sec"><summary><h2>Pass 1: tracing one question end to end</h2></summary><p><b>Question traced:</b> <code>Compare LA and Santa Ana airport congestion levels.</code> Where this guide shows data, it says whether it is a logged real model run, a real tool run on the committed snapshot, or a shape built by the repo's own code. Nothing is invented. <b>Unverified</b> is stated where it applies.</p><div class="warn"><b>What was and was not run.</b> I did not make a new live model call (it costs money and you asked me to ask first). The model's tool choices and its final answer come from the logged <b>eval run 4</b> transcript of this exact question. The tool results are re-generated by running the real tool code on the committed snapshot; they match the table in the logged answer (for example LAX 25,062 passengers per runway per day, load factor 82.1%, SNA score 73.9). <b>Unverified:</b> that the two searches were sent in one model turn (the transcript lists tool calls in order but not the turn boundaries), the tool-call ids, the token counts and the latency of this single conversation.</div><h3 id="p1-diagram">The flow, CODE vs MODEL</h3><div class="flow"><div class="step code"><span class="badge">CODE</span><b>Browser sends the message</b><div class="detail">api/static/index.html: fetch POST /chat with session_id and message</div></div><div class="arrow">&darr;</div><div class="step code"><span class="badge">CODE</span><b>FastAPI validates and starts the turn</b><div class="detail">ChatRequest (length limits) then Agent.run_turn; a session id is created if the client has none</div></div><div class="arrow">&darr;</div><div class="step code"><span class="badge">CODE</span><b>Agent loads the session history</b><div class="detail">MemorySessionStore.get_or_create; first message, so the history is empty</div></div><div class="arrow">&darr;</div><div class="step model"><span class="badge">MODEL</span><b>Model call 1: what do I need?</b><div class="detail">Receives system prompt + 8 tool definitions + the question. Decides to call search_airports for "LA" and for "Santa Ana"</div></div><div class="arrow">&darr;</div><div class="step code"><span class="badge">CODE</span><b>Tools run (in parallel)</b><div class="detail">Validate arguments, search_airports over the airport list, return matches (LAX first for "LA"; SNA for "Santa Ana")</div></div><div class="arrow">&darr;</div><div class="step model"><span class="badge">MODEL</span><b>Model call 2: pick the airports, call the comparison</b><div class="detail">Sees both results. Chooses LAX and SNA and calls compare_airports</div></div><div class="arrow">&darr;</div><div class="step code"><span class="badge">CODE</span><b>compare_airports computes everything</b><div class="detail">KPIs, per-runway ratios, points per component, leaders, differences, caveats: all deterministic</div></div><div class="arrow">&darr;</div><div class="step model"><span class="badge">MODEL</span><b>Model call 3: write the answer</b><div class="detail">Sees the comparison JSON. No more tool calls, so this text is the final reply</div></div><div class="arrow">&darr;</div><div class="step code"><span class="badge">CODE</span><b>Agent saves history, logs the turn, API returns JSON; page shows it</b><div class="detail">Session saved; a turn log line records tools, latency and tokens</div></div></div><p>Three model calls and three tool calls (two of them in parallel, if the searches shared a turn). The MODEL steps decide <em>what to ask for</em> and <em>how to say it</em>; every number in the answer was produced in the CODE steps.</p><h3 id="p1-walk">Step-by-step walkthrough</h3><h4>1. CODE: the browser</h4><div class="code"><div class="ref">api/static/index.html:68&ndash;77</div><table><tr class="noted"><td class="ln">68</td><td class="src"><code>    const response = await fetch('/chat', {</code></td><td class="note">Plain HTTP POST. There is no streaming; the page waits for the whole answer.</td></tr><tr><td class="ln">69</td><td class="src"><code>      method: 'POST',</code></td><td class="note"></td></tr><tr><td class="ln">70</td><td class="src"><code>      headers: { 'Content-Type': 'application/json' },</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">71</td><td class="src"><code>      body: JSON.stringify({ session_id: sessionId, message }),</code></td><td class="note">The session id is empty on the first message.</td></tr><tr><td class="ln">72</td><td class="src"><code>    });</code></td><td class="note"></td></tr><tr><td class="ln">73</td><td class="src"><code>    if (!response.ok) throw new Error('HTTP ' + response.status);</code></td><td class="note"></td></tr><tr><td class="ln">74</td><td class="src"><code>    const data = await response.json();</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">75</td><td class="src"><code>    sessionId = data.session_id;</code></td><td class="note">The server returns the id; the page sends it on every later message so follow-ups share history.</td></tr><tr class="noted"><td class="ln">76</td><td class="src"><code>    pending.textContent = data.reply;</code></td><td class="note">Only the final text is shown, never tool results.</td></tr><tr><td class="ln">77</td><td class="src"><code>    if (data.failed) pending.classList.add('failed');</code></td><td class="note"></td></tr></table></div><h4>2. CODE: the API endpoint</h4><div class="code"><div class="ref">api/main.py:23&ndash;25</div><table><tr><td class="ln">23</td><td class="src"><code>class ChatRequest(BaseModel):</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">24</td><td class="src"><code>    session_id: str | None = Field(default=None, max_length=64)</code></td><td class="note">Input validation by Pydantic, before any logic runs. Like @Valid / DataAnnotations: a bad request is a 422 and never reaches the agent.</td></tr><tr class="noted"><td class="ln">25</td><td class="src"><code>    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)</code></td><td class="note">A message is limited to 2,000 characters. This bounds cost and prompt-injection surface.</td></tr></table></div><div class="code"><div class="ref">api/main.py:77&ndash;89</div><table><tr><td class="ln">77</td><td class="src"><code>    @app.post("/chat", response_model=ChatResponse)</code></td><td class="note"></td></tr><tr><td class="ln">78</td><td class="src"><code>    async def chat(request: ChatRequest) -&gt; ChatResponse:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">79</td><td class="src"><code>        if app.state.container.agent is None:</code></td><td class="note">No API key means no agent: a clear 503 instead of a crash (added in the last revision).</td></tr><tr><td class="ln">80</td><td class="src"><code>            raise HTTPException(503, detail=NO_API_KEY_MESSAGE)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">81</td><td class="src"><code>        correlation_id.set(str(uuid.uuid4()))</code></td><td class="note">A fresh id for this request so every log line of the turn can be tied together.</td></tr><tr><td class="ln">82</td><td class="src"><code>        # Server-generated IDs are unguessable; a real deployment binds them to an auth token.</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">83</td><td class="src"><code>        session_id = request.session_id or str(uuid.uuid4())</code></td><td class="note">Existing session id from the client, or a new unguessable UUID. In production the id would be bound to an authenticated user.</td></tr><tr class="noted"><td class="ln">84</td><td class="src"><code>        result = await app.state.container.agent.run_turn(session_id, request.message)</code></td><td class="note">The whole agent turn. Everything below this line is reached through this call.</td></tr><tr><td class="ln">85</td><td class="src"><code>        return ChatResponse(</code></td><td class="note"></td></tr><tr><td class="ln">86</td><td class="src"><code>            session_id=session_id,</code></td><td class="note"></td></tr><tr><td class="ln">87</td><td class="src"><code>            reply=result.reply,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">88</td><td class="src"><code>            failed=result.failed,</code></td><td class="note">True when the agent fell back to the apology message.</td></tr><tr><td class="ln">89</td><td class="src"><code>        )</code></td><td class="note"></td></tr></table></div><h4>3. CODE: one turn of the agent</h4><div class="code"><div class="ref">core/agent.py:76&ndash;95</div><table><tr><td class="ln">76</td><td class="src"><code>    async def run_turn(self, session_id: str, user_text: str) -&gt; TurnResult:</code></td><td class="note"></td></tr><tr><td class="ln">77</td><td class="src"><code>        stats = _TurnStats()</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">78</td><td class="src"><code>        session_id_var.set(session_id)  # every log line of this turn carries it</code></td><td class="note">Puts the session id into a context variable (like MDC in Java or ILogger scopes in .NET) so each log line carries it.</td></tr><tr class="noted"><td class="ln">79</td><td class="src"><code>        session = await self._sessions.get_or_create(session_id)</code></td><td class="note">Loads the history. The API process keeps no state itself; this is the only place state comes from.</td></tr><tr><td class="ln">80</td><td class="src"><code>&nbsp;</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">81</td><td class="src"><code>        new_messages = [Message(role="user", content=user_text)]</code></td><td class="note">This turn's messages are collected separately and only added to the session at the end. If the turn fails, history stays clean.</td></tr><tr><td class="ln">82</td><td class="src"><code>        try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">83</td><td class="src"><code>            reply = await self._loop(session, new_messages, stats)</code></td><td class="note">The tool-calling loop (next snippet). It returns the final text, or None if it gave up.</td></tr><tr class="noted"><td class="ln">84</td><td class="src"><code>        except LLMError:</code></td><td class="note">A model failure that survived the retries becomes a fallback reply instead of an HTTP 500.</td></tr><tr><td class="ln">85</td><td class="src"><code>            reply = None</code></td><td class="note"></td></tr><tr><td class="ln">86</td><td class="src"><code>&nbsp;</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">87</td><td class="src"><code>        if reply is None:</code></td><td class="note">Covers both the LLM failure and the iteration cap. Failed turns are not saved.</td></tr><tr><td class="ln">88</td><td class="src"><code>            # Drop the half-finished history: a tool call without its result is invalid for</code></td><td class="note"></td></tr><tr><td class="ln">89</td><td class="src"><code>            # the provider, so the next message starts from the last complete turn.</code></td><td class="note"></td></tr><tr><td class="ln">90</td><td class="src"><code>            return self._finish(stats, FALLBACK_REPLY, failed=True)</code></td><td class="note"></td></tr><tr><td class="ln">91</td><td class="src"><code>&nbsp;</code></td><td class="note"></td></tr><tr><td class="ln">92</td><td class="src"><code>        new_messages.append(Message(role="assistant", content=reply))</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">93</td><td class="src"><code>        session.messages = [*session.messages, *new_messages]</code></td><td class="note">Success: this turn (user message, every tool call and result, final answer) is appended to the history.</td></tr><tr class="noted"><td class="ln">94</td><td class="src"><code>        await self._sessions.save(session)</code></td><td class="note">Persist. With the in-memory store this is a dict assignment; with Redis it would be a write.</td></tr><tr><td class="ln">95</td><td class="src"><code>        return self._finish(stats, reply)</code></td><td class="note"></td></tr></table></div><h4>4. CODE with MODEL decisions: the loop</h4><div class="code"><div class="ref">core/agent.py:97&ndash;113</div><table><tr><td class="ln">97</td><td class="src"><code>    async def _loop(</code></td><td class="note"></td></tr><tr><td class="ln">98</td><td class="src"><code>        self, session: Session, new_messages: list[Message], stats: _TurnStats</code></td><td class="note"></td></tr><tr><td class="ln">99</td><td class="src"><code>    ) -&gt; str | None:</code></td><td class="note"></td></tr><tr><td class="ln">100</td><td class="src"><code>        """Returns the final text, or None if the iteration cap was reached."""</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">101</td><td class="src"><code>        for _ in range(self._max_iterations):</code></td><td class="note">At most 6 rounds. This is the guard against a model that keeps asking for tools forever.</td></tr><tr class="noted"><td class="ln">102</td><td class="src"><code>            history = [*session.messages, *new_messages]</code></td><td class="note">Full conversation so far plus this turn's new messages. The model has no memory of its own; we resend everything every call.</td></tr><tr class="noted"><td class="ln">103</td><td class="src"><code>            response = await self._timed_llm_call(history, stats)</code></td><td class="note">MODEL step. Returns text and/or tool calls.</td></tr><tr class="noted"><td class="ln">104</td><td class="src"><code>            if not response.tool_calls:</code></td><td class="note">The only exit on success: a reply with no tool request is the final answer. (The loop does not read stop_reason; it looks at whether tool calls exist.)</td></tr><tr><td class="ln">105</td><td class="src"><code>                return response.text</code></td><td class="note"></td></tr><tr><td class="ln">106</td><td class="src"><code>&nbsp;</code></td><td class="note"></td></tr><tr><td class="ln">107</td><td class="src"><code>            new_messages.append(</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">108</td><td class="src"><code>                Message(role="assistant", content=response.text, tool_calls=response.tool_calls)</code></td><td class="note">The assistant's request is appended to the history. The API requires every tool result to follow the tool request it answers.</td></tr><tr><td class="ln">109</td><td class="src"><code>            )</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">110</td><td class="src"><code>            results = await self._run_tools(response.tool_calls, stats)</code></td><td class="note">CODE step. All tool calls of this model turn, concurrently.</td></tr><tr class="noted"><td class="ln">111</td><td class="src"><code>            new_messages.append(Message(role="user", tool_results=results))</code></td><td class="note">Results go back as a user message. See the concept box below.</td></tr><tr class="noted"><td class="ln">112</td><td class="src"><code>        log_event("max_iterations_reached", logging.WARNING, limit=self._max_iterations)</code></td><td class="note">Gave up: logs a warning and returns None, which run_turn turns into the fallback reply. Pass 3 covers this.</td></tr><tr><td class="ln">113</td><td class="src"><code>        return None</code></td><td class="note"></td></tr></table></div><h4>5. CODE: calling the model, with a timeout</h4><div class="code"><div class="ref">core/agent.py:125&ndash;139</div><table><tr><td class="ln">125</td><td class="src"><code>    async def _call_llm(self, history: list[Message]) -&gt; LLMResponse:</code></td><td class="note"></td></tr><tr><td class="ln">126</td><td class="src"><code>        """Timeout per attempt; retry with backoff; raise LLMError when attempts run out."""</code></td><td class="note"></td></tr><tr><td class="ln">127</td><td class="src"><code>        for attempt in range(self._llm_retries + 1):</code></td><td class="note"></td></tr><tr><td class="ln">128</td><td class="src"><code>            try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">129</td><td class="src"><code>                async with asyncio.timeout(self._llm_timeout_s):</code></td><td class="note">Each attempt is cut off after llm_timeout_s (30 s from settings). Like a CancellationToken with a deadline, or Polly's TimeoutPolicy.</td></tr><tr class="noted"><td class="ln">130</td><td class="src"><code>                    return await self._llm.complete(</code></td><td class="note">The provider interface (a Protocol, like an interface in Java/C#). The agent does not know it is Anthropic.</td></tr><tr class="noted"><td class="ln">131</td><td class="src"><code>                        self._system_prompt, history, self._tools.specs()</code></td><td class="note">The tool definitions are sent on every call. See the concept box on schemas.</td></tr><tr><td class="ln">132</td><td class="src"><code>                    )</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">133</td><td class="src"><code>            except (TimeoutError, LLMError) as exc:</code></td><td class="note">Only these two are retried. Pass 3 walks through the failure path.</td></tr><tr><td class="ln">134</td><td class="src"><code>                if attempt == self._llm_retries:</code></td><td class="note"></td></tr><tr><td class="ln">135</td><td class="src"><code>                    log_event("llm_failed", logging.ERROR, exc_info=True, attempts=attempt + 1)</code></td><td class="note"></td></tr><tr><td class="ln">136</td><td class="src"><code>                    raise LLMError(f"LLM failed after {attempt + 1} attempts: {exc!r}") from exc</code></td><td class="note"></td></tr><tr><td class="ln">137</td><td class="src"><code>                log_event("llm_retry", logging.WARNING, exc_info=True, attempt=attempt + 1)</code></td><td class="note"></td></tr><tr><td class="ln">138</td><td class="src"><code>                await asyncio.sleep(self._retry_backoff_s * 2**attempt)</code></td><td class="note"></td></tr><tr><td class="ln">139</td><td class="src"><code>        raise AssertionError("unreachable")</code></td><td class="note"></td></tr></table></div><h4>6. CODE then MODEL: the Anthropic adapter (the network call)</h4><div class="code"><div class="ref">adapters/anthropic_llm.py:18&ndash;71</div><table><tr><td class="ln">18</td><td class="src"><code>    async def complete(</code></td><td class="note"></td></tr><tr><td class="ln">19</td><td class="src"><code>        self, system: str, messages: list[Message], tools: list[ToolSpec]</code></td><td class="note"></td></tr><tr><td class="ln">20</td><td class="src"><code>    ) -&gt; LLMResponse:</code></td><td class="note"></td></tr><tr><td class="ln">21</td><td class="src"><code>        kwargs = {}</code></td><td class="note"></td></tr><tr><td class="ln">22</td><td class="src"><code>        if tools:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">23</td><td class="src"><code>            kwargs["tools"] = [</code></td><td class="note">Our provider-neutral ToolSpec becomes Anthropic's {name, description, input_schema}.</td></tr><tr><td class="ln">24</td><td class="src"><code>                {"name": t.name, "description": t.description, "input_schema": t.input_schema}</code></td><td class="note"></td></tr><tr><td class="ln">25</td><td class="src"><code>                for t in tools</code></td><td class="note"></td></tr><tr><td class="ln">26</td><td class="src"><code>            ]</code></td><td class="note"></td></tr><tr><td class="ln">27</td><td class="src"><code>        try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">28</td><td class="src"><code>            response = await self._client.messages.create(</code></td><td class="note">THE MODEL CALL. Everything before this line is CODE; what comes back is Claude's decision.</td></tr><tr><td class="ln">29</td><td class="src"><code>                model=self._model,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">30</td><td class="src"><code>                max_tokens=MAX_OUTPUT_TOKENS,</code></td><td class="note">Output cap of 2,048 tokens per call.</td></tr><tr><td class="ln">31</td><td class="src"><code>                system=system,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">32</td><td class="src"><code>                messages=[_to_api_message(m) for m in messages],</code></td><td class="note">Translates our messages to the API format (next snippet).</td></tr><tr><td class="ln">33</td><td class="src"><code>                # Prompt caching: the API caches the longest stable prefix (tools, then system,</code></td><td class="note"></td></tr><tr><td class="ln">34</td><td class="src"><code>                # then the conversation so far), so repeated calls pay a fraction for it.</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">35</td><td class="src"><code>                cache_control={"type": "ephemeral"},</code></td><td class="note">Prompt caching switch. See the concept box.</td></tr><tr><td class="ln">36</td><td class="src"><code>                **kwargs,</code></td><td class="note"></td></tr><tr><td class="ln">37</td><td class="src"><code>            )</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">38</td><td class="src"><code>        except anthropic.APIError as exc:</code></td><td class="note">Every SDK failure becomes our own LLMError, so core/ never imports the SDK.</td></tr><tr><td class="ln">39</td><td class="src"><code>            raise LLMError(str(exc)) from exc</code></td><td class="note"></td></tr><tr><td class="ln">40</td><td class="src"><code>        usage = response.usage</code></td><td class="note"></td></tr><tr><td class="ln">41</td><td class="src"><code>        log_event(</code></td><td class="note"></td></tr><tr><td class="ln">42</td><td class="src"><code>            "llm_usage",</code></td><td class="note"></td></tr><tr><td class="ln">43</td><td class="src"><code>            uncached_input_tokens=usage.input_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">44</td><td class="src"><code>            cache_write_tokens=usage.cache_creation_input_tokens or 0,</code></td><td class="note"></td></tr><tr><td class="ln">45</td><td class="src"><code>            cache_read_tokens=usage.cache_read_input_tokens or 0,</code></td><td class="note"></td></tr><tr><td class="ln">46</td><td class="src"><code>            output_tokens=usage.output_tokens,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">47</td><td class="src"><code>            stop_reason=response.stop_reason,</code></td><td class="note">Logged for every call. Useful for debugging; the loop's control flow does not depend on it.</td></tr><tr><td class="ln">48</td><td class="src"><code>        )</code></td><td class="note"></td></tr><tr><td class="ln">49</td><td class="src"><code>        if response.stop_reason == "max_tokens":</code></td><td class="note"></td></tr><tr><td class="ln">50</td><td class="src"><code>            log_event(</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">51</td><td class="src"><code>                "llm_truncated",</code></td><td class="note">A reply cut off at the token limit is logged as a warning so it is not mistaken for a finished one.</td></tr><tr><td class="ln">52</td><td class="src"><code>                logging.WARNING,</code></td><td class="note"></td></tr><tr><td class="ln">53</td><td class="src"><code>                output_tokens=usage.output_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">54</td><td class="src"><code>                limit=MAX_OUTPUT_TOKENS,</code></td><td class="note"></td></tr><tr><td class="ln">55</td><td class="src"><code>            )</code></td><td class="note"></td></tr><tr><td class="ln">56</td><td class="src"><code>        return LLMResponse(</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">57</td><td class="src"><code>            text="".join(b.text for b in response.content if b.type == "text"),</code></td><td class="note">Any text blocks are joined. On a tool-calling turn this is usually empty or a short preamble.</td></tr><tr class="noted"><td class="ln">58</td><td class="src"><code>            tool_calls=[</code></td><td class="note">Claude's tool_use blocks become our ToolCall objects (id, name, arguments).</td></tr><tr><td class="ln">59</td><td class="src"><code>                ToolCall(id=b.id, name=b.name, arguments=b.input)</code></td><td class="note"></td></tr><tr><td class="ln">60</td><td class="src"><code>                for b in response.content</code></td><td class="note"></td></tr><tr><td class="ln">61</td><td class="src"><code>                if b.type == "tool_use"</code></td><td class="note"></td></tr><tr><td class="ln">62</td><td class="src"><code>            ],</code></td><td class="note"></td></tr><tr><td class="ln">63</td><td class="src"><code>            # Total input processed, whether or not it was served from cache.</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">64</td><td class="src"><code>            input_tokens=(</code></td><td class="note">Total input tokens, counting cached ones, so the turn log shows true volume.</td></tr><tr><td class="ln">65</td><td class="src"><code>                usage.input_tokens</code></td><td class="note"></td></tr><tr><td class="ln">66</td><td class="src"><code>                + (usage.cache_creation_input_tokens or 0)</code></td><td class="note"></td></tr><tr><td class="ln">67</td><td class="src"><code>                + (usage.cache_read_input_tokens or 0)</code></td><td class="note"></td></tr><tr><td class="ln">68</td><td class="src"><code>            ),</code></td><td class="note"></td></tr><tr><td class="ln">69</td><td class="src"><code>            output_tokens=usage.output_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">70</td><td class="src"><code>            cache_read_tokens=usage.cache_read_input_tokens or 0,</code></td><td class="note"></td></tr><tr><td class="ln">71</td><td class="src"><code>            cache_write_tokens=usage.cache_creation_input_tokens or 0,</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">adapters/anthropic_llm.py:75&ndash;94</div><table><tr><td class="ln">75</td><td class="src"><code>def _to_api_message(message: Message) -&gt; dict:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">76</td><td class="src"><code>    if not message.tool_calls and not message.tool_results:</code></td><td class="note">Results become tool_result blocks inside a user message, tied to the request by tool_use_id.</td></tr><tr><td class="ln">77</td><td class="src"><code>        return {"role": message.role, "content": message.content}</code></td><td class="note"></td></tr><tr><td class="ln">78</td><td class="src"><code>    blocks: list[dict] = []</code></td><td class="note"></td></tr><tr><td class="ln">79</td><td class="src"><code>    if message.content:</code></td><td class="note"></td></tr><tr><td class="ln">80</td><td class="src"><code>        blocks.append({"type": "text", "text": message.content})</code></td><td class="note"></td></tr><tr><td class="ln">81</td><td class="src"><code>    blocks += [</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">82</td><td class="src"><code>        {"type": "tool_use", "id": c.id, "name": c.name, "input": c.arguments}</code></td><td class="note">An assistant message with tool calls becomes tool_use blocks.</td></tr><tr><td class="ln">83</td><td class="src"><code>        for c in message.tool_calls</code></td><td class="note"></td></tr><tr><td class="ln">84</td><td class="src"><code>    ]</code></td><td class="note"></td></tr><tr><td class="ln">85</td><td class="src"><code>    blocks += [</code></td><td class="note"></td></tr><tr><td class="ln">86</td><td class="src"><code>        {</code></td><td class="note"></td></tr><tr><td class="ln">87</td><td class="src"><code>            "type": "tool_result",</code></td><td class="note"></td></tr><tr><td class="ln">88</td><td class="src"><code>            "tool_use_id": r.tool_call_id,</code></td><td class="note"></td></tr><tr><td class="ln">89</td><td class="src"><code>            "content": r.content,</code></td><td class="note"></td></tr><tr><td class="ln">90</td><td class="src"><code>            "is_error": r.is_error,</code></td><td class="note"></td></tr><tr><td class="ln">91</td><td class="src"><code>        }</code></td><td class="note"></td></tr><tr><td class="ln">92</td><td class="src"><code>        for r in message.tool_results</code></td><td class="note"></td></tr><tr><td class="ln">93</td><td class="src"><code>    ]</code></td><td class="note"></td></tr><tr><td class="ln">94</td><td class="src"><code>    return {"role": message.role, "content": blocks}</code></td><td class="note"></td></tr></table></div><h4>7. CODE: executing a requested tool</h4><div class="code"><div class="ref">core/agent.py:141&ndash;159</div><table><tr><td class="ln">141</td><td class="src"><code>    async def _run_tools(self, calls: list[ToolCall], stats: _TurnStats) -&gt; list[ToolResult]:</code></td><td class="note"></td></tr><tr><td class="ln">142</td><td class="src"><code>        """Independent calls from one model turn run concurrently."""</code></td><td class="note"></td></tr><tr><td class="ln">143</td><td class="src"><code>        started = time.perf_counter()</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">144</td><td class="src"><code>        timed = await asyncio.gather(*(self._timed_tool_call(c) for c in calls))</code></td><td class="note">All tool calls from one model turn run at the same time. Total time is the slowest tool, not the sum.</td></tr><tr class="noted"><td class="ln">145</td><td class="src"><code>        stats.tools_ms += _ms_since(started)</code></td><td class="note">Wall time of the whole batch is recorded for the turn log.</td></tr><tr><td class="ln">146</td><td class="src"><code>        stats.tool_calls.extend(record for _, record in timed)</code></td><td class="note"></td></tr><tr><td class="ln">147</td><td class="src"><code>        return [result for result, _ in timed]</code></td><td class="note"></td></tr><tr><td class="ln">148</td><td class="src"><code>&nbsp;</code></td><td class="note"></td></tr><tr><td class="ln">149</td><td class="src"><code>    async def _timed_tool_call(self, call: ToolCall) -&gt; tuple[ToolResult, ToolCallRecord]:</code></td><td class="note"></td></tr><tr><td class="ln">150</td><td class="src"><code>        started = time.perf_counter()</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">151</td><td class="src"><code>        result = await self._tools.execute(call)</code></td><td class="note">Hands one call to the registry (next snippet).</td></tr><tr><td class="ln">152</td><td class="src"><code>        record = ToolCallRecord(</code></td><td class="note"></td></tr><tr><td class="ln">153</td><td class="src"><code>            name=call.name,</code></td><td class="note"></td></tr><tr><td class="ln">154</td><td class="src"><code>            arguments=call.arguments,</code></td><td class="note"></td></tr><tr><td class="ln">155</td><td class="src"><code>            result=result.content,</code></td><td class="note"></td></tr><tr><td class="ln">156</td><td class="src"><code>            is_error=result.is_error,</code></td><td class="note"></td></tr><tr><td class="ln">157</td><td class="src"><code>            ms=_ms_since(started),</code></td><td class="note"></td></tr><tr><td class="ln">158</td><td class="src"><code>        )</code></td><td class="note"></td></tr><tr><td class="ln">159</td><td class="src"><code>        return result, record</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">core/tools.py:49&ndash;69</div><table><tr><td class="ln">49</td><td class="src"><code>    async def execute(self, call: ToolCall) -&gt; ToolResult:</code></td><td class="note"></td></tr><tr><td class="ln">50</td><td class="src"><code>        started = time.perf_counter()</code></td><td class="note"></td></tr><tr><td class="ln">51</td><td class="src"><code>        error_code = None</code></td><td class="note"></td></tr><tr><td class="ln">52</td><td class="src"><code>        try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">53</td><td class="src"><code>            payload = await self._run(call)</code></td><td class="note">Look up, validate, run.</td></tr><tr><td class="ln">54</td><td class="src"><code>            result = ToolResult(tool_call_id=call.id, content=_dump(payload))</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">55</td><td class="src"><code>        except ToolExecutionError as exc:</code></td><td class="note">Expected failures (unknown airport, bad input) become a structured error the model can read.</td></tr><tr><td class="ln">56</td><td class="src"><code>            error_code = exc.code</code></td><td class="note"></td></tr><tr><td class="ln">57</td><td class="src"><code>            result = _error(call, exc.code, exc.message)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">58</td><td class="src"><code>        except Exception:  # noqa: BLE001 - the loop must survive any handler bug</code></td><td class="note">Any bug in a handler is caught too, logged with a traceback, and returned as a generic error. The loop never crashes on a tool.</td></tr><tr><td class="ln">59</td><td class="src"><code>            error_code = "internal_error"</code></td><td class="note"></td></tr><tr><td class="ln">60</td><td class="src"><code>            log_event("tool_exception", logging.ERROR, exc_info=True, tool=call.name)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">61</td><td class="src"><code>            result = _error(call, error_code, "The tool failed. Do not guess the data.")</code></td><td class="note">The error text itself tells the model not to invent data.</td></tr><tr><td class="ln">62</td><td class="src"><code>        log_event(</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">63</td><td class="src"><code>            "tool_call",</code></td><td class="note">One log event per tool call with its duration and error code.</td></tr><tr><td class="ln">64</td><td class="src"><code>            name=call.name,</code></td><td class="note"></td></tr><tr><td class="ln">65</td><td class="src"><code>            ms=round((time.perf_counter() - started) * 1000),</code></td><td class="note"></td></tr><tr><td class="ln">66</td><td class="src"><code>            is_error=result.is_error,</code></td><td class="note"></td></tr><tr><td class="ln">67</td><td class="src"><code>            error_code=error_code,</code></td><td class="note"></td></tr><tr><td class="ln">68</td><td class="src"><code>        )</code></td><td class="note"></td></tr><tr><td class="ln">69</td><td class="src"><code>        return result</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">core/tools.py:71&ndash;79</div><table><tr><td class="ln">71</td><td class="src"><code>    async def _run(self, call: ToolCall) -&gt; dict[str, Any]:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">72</td><td class="src"><code>        tool = self._tools.get(call.name)</code></td><td class="note">The registry is a dict by tool name, like a handler map.</td></tr><tr><td class="ln">73</td><td class="src"><code>        if tool is None:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">74</td><td class="src"><code>            raise ToolExecutionError("unknown_tool", f"No tool named {call.name!r}.")</code></td><td class="note">A hallucinated tool name is a normal error result, not an exception.</td></tr><tr><td class="ln">75</td><td class="src"><code>        try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">76</td><td class="src"><code>            args = tool.input_model.model_validate(call.arguments)</code></td><td class="note">The model's arguments are validated against the tool's Pydantic model (the same class that produced the JSON schema). Like a controller binding a request DTO.</td></tr><tr><td class="ln">77</td><td class="src"><code>        except ValidationError as exc:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">78</td><td class="src"><code>            raise ToolExecutionError("invalid_arguments", _summarise(exc)) from exc</code></td><td class="note">Validation errors are summarised and returned so the model can correct itself.</td></tr><tr><td class="ln">79</td><td class="src"><code>        return await self._invoke(tool, args)</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">core/tools.py:81&ndash;95</div><table><tr><td class="ln">81</td><td class="src"><code>    async def _invoke(self, tool: Tool, args: BaseModel) -&gt; dict[str, Any]:</code></td><td class="note"></td></tr><tr><td class="ln">82</td><td class="src"><code>        """Timeout per attempt, one retry on unexpected failure. Tools are read-only, so a</code></td><td class="note"></td></tr><tr><td class="ln">83</td><td class="src"><code>        retry is always safe."""</code></td><td class="note"></td></tr><tr><td class="ln">84</td><td class="src"><code>        for attempt in range(2):</code></td><td class="note"></td></tr><tr><td class="ln">85</td><td class="src"><code>            try:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">86</td><td class="src"><code>                async with asyncio.timeout(self._timeout_s):</code></td><td class="note">10 s per attempt.</td></tr><tr class="noted"><td class="ln">87</td><td class="src"><code>                    return await tool.handler(args)</code></td><td class="note">Calls the airport tool.</td></tr><tr class="noted"><td class="ln">88</td><td class="src"><code>            except ToolExecutionError:</code></td><td class="note">Expected errors are not retried.</td></tr><tr><td class="ln">89</td><td class="src"><code>                raise</code></td><td class="note"></td></tr><tr><td class="ln">90</td><td class="src"><code>            except Exception:  # noqa: BLE001 - timeouts and backend errors alike</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">91</td><td class="src"><code>                if attempt == 1:</code></td><td class="note">Second failure: give up and let execute() turn it into an error result.</td></tr><tr><td class="ln">92</td><td class="src"><code>                    raise</code></td><td class="note"></td></tr><tr><td class="ln">93</td><td class="src"><code>                log_event("tool_retry", logging.WARNING, exc_info=True, tool=tool.name)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">94</td><td class="src"><code>                await asyncio.sleep(RETRY_BACKOFF_S)</code></td><td class="note">Short pause before the retry. Retrying is safe only because every tool is read-only.</td></tr><tr><td class="ln">95</td><td class="src"><code>        raise AssertionError("unreachable")</code></td><td class="note"></td></tr></table></div><h4>8. CODE: the airport tools and the analytics behind them</h4><div class="code"><div class="ref">domain/tools.py:46&ndash;47</div><table><tr><td class="ln">46</td><td class="src"><code>class CompareArgs(BaseModel):</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">47</td><td class="src"><code>    iatas: list[str] = Field(min_length=2, max_length=MAX_COMPARE, description="IATA codes")</code></td><td class="note">This one line is both validation and the JSON schema the model sees: 2 to 5 airport codes.</td></tr></table></div><div class="code"><div class="ref">domain/tools.py:55&ndash;57</div><table><tr><td class="ln">55</td><td class="src"><code>    async def search_airports(args: SearchArgs) -&gt; dict[str, Any]:</code></td><td class="note"></td></tr><tr><td class="ln">56</td><td class="src"><code>        states = [args.state] if args.state else None</code></td><td class="note"></td></tr><tr><td class="ln">57</td><td class="src"><code>        return await analytics.search(args.query, args.region, states, args.limit)</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">domain/tools.py:65&ndash;66</div><table><tr><td class="ln">65</td><td class="src"><code>    async def compare_airports(args: CompareArgs) -&gt; dict[str, Any]:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">66</td><td class="src"><code>        return await analytics.compare(args.iatas)</code></td><td class="note">A thin wrapper. The tool does no math; it calls the analytics layer.</td></tr></table></div><div class="code"><div class="ref">domain/tools.py:114&ndash;121</div><table><tr><td class="ln">114</td><td class="src"><code>            "compare_airports",</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">115</td><td class="src"><code>            "Compare 2 to 5 airports side by side: passengers, growth, load factor, runways, "</code></td><td class="note">This description is what the model reads to decide when to call the tool. It is part of the prompt.</td></tr><tr><td class="ln">116</td><td class="src"><code>            "passengers and departures per runway per day, peak-month ratio and score. Use it for "</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">117</td><td class="src"><code>            "'compare X and Y' and for congestion comparisons. 'highest_by_metric' says which "</code></td><td class="note"><b>Candidate change #1:</b> this field name does not exist in the result (it is comparison_by_metric). See the candidates section.</td></tr><tr><td class="ln">118</td><td class="src"><code>            "airport is highest on each measure.",</code></td><td class="note"></td></tr><tr><td class="ln">119</td><td class="src"><code>            CompareArgs,</code></td><td class="note"></td></tr><tr><td class="ln">120</td><td class="src"><code>            compare_airports,</code></td><td class="note"></td></tr><tr><td class="ln">121</td><td class="src"><code>        ),</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">domain/analytics.py:278&ndash;296</div><table><tr><td class="ln">278</td><td class="src"><code>    async def search(</code></td><td class="note"></td></tr><tr><td class="ln">279</td><td class="src"><code>        self, query: str, region: str | None, states: Sequence[str] | None, limit: int</code></td><td class="note"></td></tr><tr><td class="ln">280</td><td class="src"><code>    ) -&gt; dict:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">281</td><td class="src"><code>        snap = await self._load()</code></td><td class="note">Loads the national KPI table once (next snippet).</td></tr><tr class="noted"><td class="ln">282</td><td class="src"><code>        airports = await self._repository.list_airports(states=self._states(region, states))</code></td><td class="note">All US airports in scope (2,036); this is the repository interface, Postgres or in-memory.</td></tr><tr class="noted"><td class="ln">283</td><td class="src"><code>        found = search_airports(airports, query, self._config.aliases, limit)</code></td><td class="note">Pure function over the airport records (below).</td></tr><tr class="noted"><td class="ln">284</td><td class="src"><code>        return self._envelope(</code></td><td class="note">Adds as_of, data_period and caveats to every result.</td></tr><tr><td class="ln">285</td><td class="src"><code>            snap,</code></td><td class="note"></td></tr><tr><td class="ln">286</td><td class="src"><code>            {</code></td><td class="note"></td></tr><tr><td class="ln">287</td><td class="src"><code>                "query": query,</code></td><td class="note"></td></tr><tr><td class="ln">288</td><td class="src"><code>                "matches": [{**self._airport_summary(a), "matched_on": why} for a, why in found],</code></td><td class="note"></td></tr><tr><td class="ln">289</td><td class="src"><code>                "note": (</code></td><td class="note"></td></tr><tr><td class="ln">290</td><td class="src"><code>                    None</code></td><td class="note"></td></tr><tr><td class="ln">291</td><td class="src"><code>                    if found</code></td><td class="note"></td></tr><tr><td class="ln">292</td><td class="src"><code>                    else "No airport matched. Try a city, a full airport name or an IATA code."</code></td><td class="note"></td></tr><tr><td class="ln">293</td><td class="src"><code>                ),</code></td><td class="note"></td></tr><tr><td class="ln">294</td><td class="src"><code>            },</code></td><td class="note"></td></tr><tr><td class="ln">295</td><td class="src"><code>            [],</code></td><td class="note"></td></tr><tr><td class="ln">296</td><td class="src"><code>        )</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">domain/search.py:16&ndash;33</div><table><tr><td class="ln">16</td><td class="src"><code>def _match(airport: Airport, query: str, tokens: list[str], aliases: Mapping[str, list[str]]):</code></td><td class="note"></td></tr><tr><td class="ln">17</td><td class="src"><code>    """Returns (score, reason) or None. Higher scores are better matches."""</code></td><td class="note"></td></tr><tr><td class="ln">18</td><td class="src"><code>    code = query.upper()</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">19</td><td class="src"><code>    if airport.iata == code or airport.ident == code:</code></td><td class="note">Exact IATA code is best (100).</td></tr><tr><td class="ln">20</td><td class="src"><code>        return 100, "airport code"</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">21</td><td class="src"><code>    if airport.iata in aliases.get(query, []):</code></td><td class="note">"LA" is a config alias for LAX (domain/config.yaml); this is why LAX is first.</td></tr><tr><td class="ln">22</td><td class="src"><code>        return 95 - aliases[query].index(airport.iata), "common name"</code></td><td class="note"></td></tr><tr><td class="ln">23</td><td class="src"><code>    city = _normalize(airport.city or "")</code></td><td class="note"></td></tr><tr><td class="ln">24</td><td class="src"><code>    name = _normalize(airport.name)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">25</td><td class="src"><code>    if city == query:</code></td><td class="note">Then city equals the query, then starts with it (so "LA" also finds Las Vegas, Lake Charles and others).</td></tr><tr><td class="ln">26</td><td class="src"><code>        return 80, "city"</code></td><td class="note"></td></tr><tr><td class="ln">27</td><td class="src"><code>    if city.startswith(query):</code></td><td class="note"></td></tr><tr><td class="ln">28</td><td class="src"><code>        return 70, "city"</code></td><td class="note"></td></tr><tr><td class="ln">29</td><td class="src"><code>    if query in name:</code></td><td class="note"></td></tr><tr><td class="ln">30</td><td class="src"><code>        return 60, "airport name"</code></td><td class="note"></td></tr><tr><td class="ln">31</td><td class="src"><code>    if tokens and all(t in f"{city} {name}" for t in tokens):</code></td><td class="note"></td></tr><tr><td class="ln">32</td><td class="src"><code>        return 40, "airport name or city"</code></td><td class="note"></td></tr><tr><td class="ln">33</td><td class="src"><code>    return None</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">domain/analytics.py:76&ndash;91</div><table><tr><td class="ln">76</td><td class="src"><code>    async def _load(self) -&gt; _Snapshot:</code></td><td class="note"></td></tr><tr><td class="ln">77</td><td class="src"><code>        """The national KPI table is computed once; the snapshot does not change while running."""</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">78</td><td class="src"><code>        async with self._lock:</code></td><td class="note">An asyncio lock so two simultaneous first requests do not both build the table.</td></tr><tr class="noted"><td class="ln">79</td><td class="src"><code>            if self._snapshot is None:</code></td><td class="note">Computed once per process, on the first tool call of any user. Later calls reuse it.</td></tr><tr><td class="ln">80</td><td class="src"><code>                info = await self._repository.get_snapshot_info()</code></td><td class="note"></td></tr><tr><td class="ln">81</td><td class="src"><code>                airports = {</code></td><td class="note"></td></tr><tr><td class="ln">82</td><td class="src"><code>                    a.iata: a for a in await self._repository.list_airports(peers_only=True)</code></td><td class="note"></td></tr><tr><td class="ln">83</td><td class="src"><code>                }</code></td><td class="note"></td></tr><tr><td class="ln">84</td><td class="src"><code>                traffic: dict[str, list[MonthlyTraffic]] = {}</code></td><td class="note"></td></tr><tr><td class="ln">85</td><td class="src"><code>                for row in await self._repository.get_traffic():</code></td><td class="note"></td></tr><tr><td class="ln">86</td><td class="src"><code>                    traffic.setdefault(row.iata, []).append(row)</code></td><td class="note"></td></tr><tr><td class="ln">87</td><td class="src"><code>                windows = make_windows(info.latest_period, self._config.scoring.window_months)</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">88</td><td class="src"><code>                kpis = {i: compute_kpis(a, traffic[i], windows) for i, a in airports.items()}</code></td><td class="note">For all 228 peer airports: the KPIs of the last 12 months vs the 12 before (pass 2).</td></tr><tr class="noted"><td class="ln">89</td><td class="src"><code>                national = build_national_scores(list(kpis.values()))</code></td><td class="note">Percentiles of every component against all peers (pass 2).</td></tr><tr><td class="ln">90</td><td class="src"><code>                self._snapshot = _Snapshot(info, windows, airports, traffic, kpis, national)</code></td><td class="note"></td></tr><tr><td class="ln">91</td><td class="src"><code>            return self._snapshot</code></td><td class="note"></td></tr></table></div><div class="code"><div class="ref">domain/analytics.py:404&ndash;443</div><table><tr><td class="ln">404</td><td class="src"><code>    async def compare(self, iatas: Sequence[str]) -&gt; dict:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">405</td><td class="src"><code>        codes = list(dict.fromkeys(i.upper() for i in iatas))</code></td><td class="note">Removes duplicate codes while keeping order.</td></tr><tr><td class="ln">406</td><td class="src"><code>        if not 2 &lt;= len(codes) &lt;= MAX_COMPARE:</code></td><td class="note"></td></tr><tr><td class="ln">407</td><td class="src"><code>            raise ToolExecutionError("invalid_arguments", f"Give 2 to {MAX_COMPARE} airports.")</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">408</td><td class="src"><code>        weights = normalize_weights(self._config.scoring.weights, None)</code></td><td class="note">Default weights from config.</td></tr><tr><td class="ln">409</td><td class="src"><code>        snap = await self._load()</code></td><td class="note"></td></tr><tr><td class="ln">410</td><td class="src"><code>        rows, comparable, scored_components = [], {}, {}</code></td><td class="note"></td></tr><tr><td class="ln">411</td><td class="src"><code>        for code in codes:</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">412</td><td class="src"><code>            _, airport = await self._peer(code)</code></td><td class="note">Raises not_in_peer_set for an airport without traffic data, which becomes an error result for the model.</td></tr><tr class="noted"><td class="ln">413</td><td class="src"><code>            kpis = snap.kpis[code]</code></td><td class="note">Already computed in _load; no database call per airport.</td></tr><tr><td class="ln">414</td><td class="src"><code>            scored = snap.national.components.get(code)</code></td><td class="note"></td></tr><tr><td class="ln">415</td><td class="src"><code>            rows.append(</code></td><td class="note"></td></tr><tr><td class="ln">416</td><td class="src"><code>                {</code></td><td class="note"></td></tr><tr><td class="ln">417</td><td class="src"><code>                    **self._airport_summary(airport),</code></td><td class="note"></td></tr><tr><td class="ln">418</td><td class="src"><code>                    "runways": self._runways(airport),</code></td><td class="note"></td></tr><tr><td class="ln">419</td><td class="src"><code>                    **self._kpi_summary(kpis),</code></td><td class="note"></td></tr><tr><td class="ln">420</td><td class="src"><code>                    "score": _round(weighted_score(scored, weights)) if scored else None,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">421</td><td class="src"><code>                    **(self._points(scored, weights) if scored else {}),</code></td><td class="note">Weighted points per component, so the model can quote a driver rather than infer it.</td></tr><tr><td class="ln">422</td><td class="src"><code>                }</code></td><td class="note"></td></tr><tr><td class="ln">423</td><td class="src"><code>            )</code></td><td class="note"></td></tr><tr><td class="ln">424</td><td class="src"><code>            if scored:</code></td><td class="note"></td></tr><tr><td class="ln">425</td><td class="src"><code>                scored_components[code] = scored</code></td><td class="note"></td></tr><tr><td class="ln">426</td><td class="src"><code>            comparable[code] = self._kpi_summary(kpis)</code></td><td class="note"></td></tr><tr><td class="ln">427</td><td class="src"><code>        return self._envelope(</code></td><td class="note"></td></tr><tr><td class="ln">428</td><td class="src"><code>            snap,</code></td><td class="note"></td></tr><tr><td class="ln">429</td><td class="src"><code>            {</code></td><td class="note"></td></tr><tr><td class="ln">430</td><td class="src"><code>                "score_name": self._config.scoring.score_name,</code></td><td class="note"></td></tr><tr><td class="ln">431</td><td class="src"><code>                "airports": rows,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">432</td><td class="src"><code>                "comparison_by_metric": self._comparison(comparable),</code></td><td class="note">Highest, lowest, difference and ratio per metric, computed here, never by the model.</td></tr><tr><td class="ln">433</td><td class="src"><code>                **(</code></td><td class="note"></td></tr><tr><td class="ln">434</td><td class="src"><code>                    {</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">435</td><td class="src"><code>                        "leaders_by_component": self._leaders(scored_components),</code></td><td class="note">Top airport per score component.</td></tr><tr><td class="ln">436</td><td class="src"><code>                        **self._spread([r["score"] for r in rows if r["score"] is not None]),</code></td><td class="note"></td></tr><tr><td class="ln">437</td><td class="src"><code>                    }</code></td><td class="note"></td></tr><tr><td class="ln">438</td><td class="src"><code>                    if len(scored_components) &gt;= 2</code></td><td class="note"></td></tr><tr><td class="ln">439</td><td class="src"><code>                    else {}</code></td><td class="note"></td></tr><tr><td class="ln">440</td><td class="src"><code>                ),</code></td><td class="note"></td></tr><tr><td class="ln">441</td><td class="src"><code>            },</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">442</td><td class="src"><code>            ["data", "congestion", "cargo", "score"],</code></td><td class="note">Which caveat texts from config.yaml are attached to this result.</td></tr><tr><td class="ln">443</td><td class="src"><code>        )</code></td><td class="note"></td></tr></table></div><h4>9. CODE: after the final answer</h4><div class="code"><div class="ref">core/agent.py:161&ndash;183</div><table><tr><td class="ln">161</td><td class="src"><code>    def _finish(self, stats: _TurnStats, reply: str, *, failed: bool = False) -&gt; TurnResult:</code></td><td class="note"></td></tr><tr><td class="ln">162</td><td class="src"><code>        result = TurnResult(</code></td><td class="note"></td></tr><tr><td class="ln">163</td><td class="src"><code>            reply=reply,</code></td><td class="note"></td></tr><tr><td class="ln">164</td><td class="src"><code>            failed=failed,</code></td><td class="note"></td></tr><tr><td class="ln">165</td><td class="src"><code>            tool_calls=stats.tool_calls,</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">166</td><td class="src"><code>            latency_ms=_ms_since(stats.started),</code></td><td class="note">Total turn time, plus LLM time and tool time separately: the numbers you would put on a dashboard.</td></tr><tr><td class="ln">167</td><td class="src"><code>            llm_ms=stats.llm_ms,</code></td><td class="note"></td></tr><tr><td class="ln">168</td><td class="src"><code>            tools_ms=stats.tools_ms,</code></td><td class="note"></td></tr><tr><td class="ln">169</td><td class="src"><code>            input_tokens=stats.input_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">170</td><td class="src"><code>            output_tokens=stats.output_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">171</td><td class="src"><code>        )</code></td><td class="note"></td></tr><tr class="noted"><td class="ln">172</td><td class="src"><code>        log_event(</code></td><td class="note">One structured log line per turn: tools used, timings, tokens, failure flag. Message text is deliberately not logged.</td></tr><tr><td class="ln">173</td><td class="src"><code>            "turn",</code></td><td class="note"></td></tr><tr><td class="ln">174</td><td class="src"><code>            tools=[t.name for t in result.tool_calls],</code></td><td class="note"></td></tr><tr><td class="ln">175</td><td class="src"><code>            tool_errors=sum(t.is_error for t in result.tool_calls),</code></td><td class="note"></td></tr><tr><td class="ln">176</td><td class="src"><code>            latency_ms=round(result.latency_ms),</code></td><td class="note"></td></tr><tr><td class="ln">177</td><td class="src"><code>            llm_ms=round(result.llm_ms),</code></td><td class="note"></td></tr><tr><td class="ln">178</td><td class="src"><code>            tools_ms=round(result.tools_ms),</code></td><td class="note"></td></tr><tr><td class="ln">179</td><td class="src"><code>            input_tokens=result.input_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">180</td><td class="src"><code>            output_tokens=result.output_tokens,</code></td><td class="note"></td></tr><tr><td class="ln">181</td><td class="src"><code>            failed=failed,</code></td><td class="note"></td></tr><tr><td class="ln">182</td><td class="src"><code>        )</code></td><td class="note"></td></tr><tr><td class="ln">183</td><td class="src"><code>        return result</code></td><td class="note"></td></tr></table></div><h3 id="p1-data">The actual data</h3><p>Order of events for the example question. Each block says where it came from.</p><details class="data" open><summary>Call 1: what is sent to Claude <span class="src-tag">source: built by the repo's own _to_api_message(); tool-call ids are placeholders (the real ids were not logged)</span></summary><pre>{
+  "model": "claude-sonnet-5-5  (from settings)",
+  "max_tokens": 2048,
+  "system": "You are an analyst assistant for an investment firm that evaluates US airport modernization projects. You help analysts find airports where terminal or capacity expansion looks most promising, and you compare airports. Your answers come from tools that read public aviation data (BTS T-100 monthly traffic, OurAirports facts, the   ... [4,407 characters in total, from domain/system_prompt.md]",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Compare LA and Santa Ana airport congestion levels."
+    }
+  ],
+  "cache_control": {
+    "type": "ephemeral"
+  },
+  "tools": "[8 tool definitions: search_airports, get_airport_profile, rank_airports, compare_airports, get_distance_profile, demand_pressure, get_live_status, get_methodology; compare_airports shown in full below]"
+}</pre></details><details class="data"><summary>The compare_airports tool definition inside that call (what the model reads) <span class="src-tag">source: the real tool run on the committed snapshot (same code as run 4), not typed by hand</span></summary><pre>{
+  "name": "compare_airports",
+  "description": "Compare 2 to 5 airports side by side: passengers, growth, load factor, runways, passengers and departures per runway per day, peak-month ratio and score. Use it for 'compare X and Y' and for congestion comparisons. 'highest_by_metric' says which airport is highest on each measure.",
+  "input_schema": {
+    "properties": {
+      "iatas": {
+        "description": "IATA codes",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 5,
+        "minItems": 2,
+        "title": "Iatas",
+        "type": "array"
+      }
+    },
+    "required": [
+      "iatas"
+    ],
+    "title": "CompareArgs",
+    "type": "object"
+  }
+}</pre></details><details class="data"><summary>Claude's reply to call 1: tool_use blocks (as the API returns them; ids are placeholders) <span class="src-tag">tool names and arguments: source: eval run 4 transcript (evals/run4_transcripts.md, case la_vs_sna), real model output; grouping into one turn is unverified</span></summary><pre>[
+  {
+    "type": "tool_use",
+    "id": "toolu_PLACEHOLDER_1",
+    "name": "search_airports",
+    "input": {
+      "query": "LA"
+    }
+  },
+  {
+    "type": "tool_use",
+    "id": "toolu_PLACEHOLDER_2",
+    "name": "search_airports",
+    "input": {
+      "query": "Santa Ana"
+    }
+  }
+]</pre></details><details class="data"><summary>Tool result 1: search_airports {"query": "LA"} <span class="src-tag">source: the real tool run on the committed snapshot (same code as run 4), not typed by hand</span></summary><pre>{
+  "as_of": "Apr 2026",
+  "data_period": {
+    "current": "May 2025 to Apr 2026",
+    "compared_with": "May 2024 to Apr 2025"
+  },
+  "query": "LA",
+  "matches": [
+    {
+      "iata": "LAX",
+      "name": "Los Angeles International Airport",
+      "city": "Los Angeles",
+      "state": "CA",
+      "in_peer_set": true,
+      "matched_on": "common name"
+    },
+    {
+      "iata": "LAS",
+      "name": "Harry Reid International Airport",
+      "city": "Las Vegas",
+      "state": "NV",
+      "in_peer_set": true,
+      "matched_on": "city"
+    },
+    {
+      "iata": "LAL",
+      "name": "Lakeland Linder International Airport",
+      "city": "Lakeland",
+      "state": "FL",
+      "in_peer_set": true,
+      "matched_on": "city"
+    },
+    {
+      "iata": "LAN",
+      "name": "Capital Region International Airport",
+      "city": "Lansing",
+      "state": "MI",
+      "in_peer_set": true,
+      "matched_on": "city"
+    },
+    {
+      "iata": "LFT",
+      "name": "Lafayette Regional Airport",
+      "city": "Lafayette",
+      "state": "LA",
+      "in_peer_set": true,
+      "matched_on": "city"
+    }
+  ],
+  "note": null,
+  "caveats": []
+}</pre></details><details class="data"><summary>Tool result 2: search_airports {"query": "Santa Ana"} <span class="src-tag">source: the real tool run on the committed snapshot (same code as run 4), not typed by hand</span></summary><pre>{
+  "as_of": "Apr 2026",
+  "data_period": {
+    "current": "May 2025 to Apr 2026",
+    "compared_with": "May 2024 to Apr 2025"
+  },
+  "query": "Santa Ana",
+  "matches": [
+    {
+      "iata": "SNA",
+      "name": "John Wayne Orange County International Airport",
+      "city": "Santa Ana",
+      "state": "CA",
+      "in_peer_set": true,
+      "matched_on": "city"
+    }
+  ],
+  "note": null,
+  "caveats": []
+}</pre></details><details class="data"><summary>Call 2: what is sent to Claude (history so far; the tool_result contents are the two JSON blocks above) <span class="src-tag">source: built by the repo's own _to_api_message(); tool-call ids are placeholders (the real ids were not logged)</span></summary><pre>{
+  "model": "claude-sonnet-5-5  (from settings)",
+  "max_tokens": 2048,
+  "system": "You are an analyst assistant for an investment firm that evaluates US airport modernization projects. You help analysts find airports where terminal or capacity expansion looks most promising, and you compare airports. Your answers come from tools that read public aviation data (BTS T-100 monthly traffic, OurAirports facts, the   ... [4,407 characters in total, from domain/system_prompt.md]",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Compare LA and Santa Ana airport congestion levels."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_PLACEHOLDER_1",
+          "name": "search_airports",
+          "input": {
+            "query": "LA"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_PLACEHOLDER_2",
+          "name": "search_airports",
+          "input": {
+            "query": "Santa Ana"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_PLACEHOLDER_1",
+          "content": "&lt;JSON of result 1, shown below&gt;",
+          "is_error": false
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_PLACEHOLDER_2",
+          "content": "&lt;JSON of result 2, shown below&gt;",
+          "is_error": false
+        }
+      ]
+    }
+  ],
+  "cache_control": {
+    "type": "ephemeral"
+  },
+  "tools": "[8 tool definitions: search_airports, get_airport_profile, rank_airports, compare_airports, get_distance_profile, demand_pressure, get_live_status, get_methodology; compare_airports shown in full below]"
+}</pre></details><details class="data"><summary>Claude's reply to call 2: the comparison request <span class="src-tag">source: eval run 4 transcript (evals/run4_transcripts.md, case la_vs_sna), real model output</span></summary><pre>[
+  {
+    "type": "tool_use",
+    "id": "toolu_PLACEHOLDER_3",
+    "name": "compare_airports",
+    "input": {
+      "iatas": [
+        "LAX",
+        "SNA"
+      ]
+    }
+  }
+]</pre></details><details class="data"><summary>Tool result 3: compare_airports {"iatas": ["LAX", "SNA"]} (the whole result Claude sees) <span class="src-tag">source: the real tool run on the committed snapshot (same code as run 4), not typed by hand</span></summary><pre>{
+  "as_of": "Apr 2026",
+  "data_period": {
+    "current": "May 2025 to Apr 2026",
+    "compared_with": "May 2024 to Apr 2025"
+  },
+  "score_name": "Expansion Pressure Score",
+  "airports": [
+    {
+      "iata": "LAX",
+      "name": "Los Angeles International Airport",
+      "city": "Los Angeles",
+      "state": "CA",
+      "in_peer_set": true,
+      "runways": {
+        "total": 4,
+        "commercial": 4,
+        "commercial_means": "open, paved, at least 5,000 ft long",
+        "longest_ft": 12894
+      },
+      "passengers": 36590656,
+      "departures": 270853,
+      "passengers_added": -1243979,
+      "passenger_growth_pct": -3.3,
+      "seat_growth_pct": -1.7,
+      "demand_gap_pts": -1.6,
+      "load_factor_pct": 82.1,
+      "runway_count": 4,
+      "commercial_runway_count": 4,
+      "passengers_per_commercial_runway": 9147664.0,
+      "passengers_per_commercial_runway_per_day": 25062.0,
+      "departures_per_commercial_runway_per_day": 185.5,
+      "peak_month_ratio": 1.16,
+      "data_flags": [],
+      "score": 63.9,
+      "points": {
+        "growth": 3.8,
+        "load_factor": 21.2,
+        "pax_per_runway": 19.8,
+        "demand_gap": 7.6,
+        "scale": 9.8,
+        "peak": 1.8
+      },
+      "main_driver": "load_factor"
+    },
+    {
+      "iata": "SNA",
+      "name": "John Wayne Orange County International Airport",
+      "city": "Santa Ana",
+      "state": "CA",
+      "in_peer_set": true,
+      "runways": {
+        "total": 2,
+        "commercial": 1,
+        "commercial_means": "open, paved, at least 5,000 ft long",
+        "longest_ft": 5700
+      },
+      "passengers": 5590354,
+      "departures": 51609,
+      "passengers_added": 289502,
+      "passenger_growth_pct": 5.5,
+      "seat_growth_pct": 4.1,
+      "demand_gap_pts": 1.4,
+      "load_factor_pct": 80.4,
+      "runway_count": 2,
+      "commercial_runway_count": 1,
+      "passengers_per_commercial_runway": 5590354.0,
+      "passengers_per_commercial_runway_per_day": 15316.0,
+      "departures_per_commercial_runway_per_day": 141.4,
+      "peak_month_ratio": 1.1,
+      "data_flags": [],
+      "score": 73.9,
+      "points": {
+        "growth": 17.9,
+        "load_factor": 17.4,
+        "pax_per_runway": 18.5,
+        "demand_gap": 11.7,
+        "scale": 8.2,
+        "peak": 0.2
+      },
+      "main_driver": "pax_per_runway"
+    }
+  ],
+  "comparison_by_metric": {
+    "passengers": {
+      "highest": "LAX",
+      "lowest": "SNA",
+      "difference": 31000302.0,
+      "ratio_highest_to_lowest": 6.55
+    },
+    "departures_per_commercial_runway_per_day": {
+      "highest": "LAX",
+      "lowest": "SNA",
+      "difference": 44.1,
+      "ratio_highest_to_lowest": 1.31
+    },
+    "passengers_per_commercial_runway_per_day": {
+      "highest": "LAX",
+      "lowest": "SNA",
+      "difference": 9746.0,
+      "ratio_highest_to_lowest": 1.64
+    },
+    "load_factor_pct": {
+      "highest": "LAX",
+      "lowest": "SNA",
+      "difference": 1.7,
+      "ratio_highest_to_lowest": 1.02
+    },
+    "peak_month_ratio": {
+      "highest": "LAX",
+      "lowest": "SNA",
+      "difference": 0.06,
+      "ratio_highest_to_lowest": 1.05
+    },
+    "passenger_growth_pct": {
+      "highest": "SNA",
+      "lowest": "LAX",
+      "difference": 8.8
+    },
+    "seat_growth_pct": {
+      "highest": "SNA",
+      "lowest": "LAX",
+      "difference": 5.8
+    },
+    "demand_gap_pts": {
+      "highest": "SNA",
+      "lowest": "LAX",
+      "difference": 3.0
+    }
+  },
+  "leaders_by_component": {
+    "growth": {
+      "leader": "SNA",
+      "value": 5.46
+    },
+    "load_factor": {
+      "leader": "LAX",
+      "value": 82.07
+    },
+    "pax_per_runway": {
+      "leader": "LAX",
+      "value": 9147664.0
+    },
+    "demand_gap": {
+      "leader": "SNA",
+      "value": 1.39
+    },
+    "scale": {
+      "leader": "LAX",
+      "value": 36590656.0
+    },
+    "peak": {
+      "leader": "LAX",
+      "value": 1.16
+    }
+  },
+  "score_range": "0 to 100",
+  "score_spread": {
+    "highest": 73.9,
+    "lowest": 63.9,
+    "difference": 10.0
+  },
+  "caveats": [
+    "Source: BTS T-100 monthly data, counted by origin airport. The latest month is Apr 2026, so the data is about six months old.",
+    "Congestion here means how heavily runways and seats are used. No delay history is available; FAA live status is a snapshot, not a trend.",
+    "Departure counts include all-cargo flights. Passengers, seats and load factor are not affected.",
+    "The score measures demand pressure (growth, utilization, load), not physical terminal capacity. No terminal, gate or construction data is available.",
+    "Per-runway metrics count only commercial runways (open, paved, at least 5,000 ft long); short and unpaved runways are left out. Runway count is still only a rough capacity proxy.",
+    "The weights are judgmental and configurable. 'Profitable' is not measured."
+  ]
+}</pre></details><details class="data"><summary>Call 3: what is sent to Claude (the history now holds both tool rounds) <span class="src-tag">source: built by the repo's own _to_api_message(); tool-call ids are placeholders (the real ids were not logged)</span></summary><pre>{
+  "model": "claude-sonnet-5-5  (from settings)",
+  "max_tokens": 2048,
+  "system": "You are an analyst assistant for an investment firm that evaluates US airport modernization projects. You help analysts find airports where terminal or capacity expansion looks most promising, and you compare airports. Your answers come from tools that read public aviation data (BTS T-100 monthly traffic, OurAirports facts, the   ... [4,407 characters in total, from domain/system_prompt.md]",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Compare LA and Santa Ana airport congestion levels."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_PLACEHOLDER_1",
+          "name": "search_airports",
+          "input": {
+            "query": "LA"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_PLACEHOLDER_2",
+          "name": "search_airports",
+          "input": {
+            "query": "Santa Ana"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_PLACEHOLDER_1",
+          "content": "&lt;JSON of result 1, shown below&gt;",
+          "is_error": false
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_PLACEHOLDER_2",
+          "content": "&lt;JSON of result 2, shown below&gt;",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_PLACEHOLDER_3",
+          "name": "compare_airports",
+          "input": {
+            "iatas": [
+              "LAX",
+              "SNA"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_PLACEHOLDER_3",
+          "content": "&lt;JSON of result 3, shown below&gt;",
+          "is_error": false
+        }
+      ]
+    }
+  ],
+  "cache_control": {
+    "type": "ephemeral"
+  },
+  "tools": "[8 tool definitions: search_airports, get_airport_profile, rank_airports, compare_airports, get_distance_profile, demand_pressure, get_live_status, get_methodology; compare_airports shown in full below]"
+}</pre></details><details class="data" open><summary>Claude's final answer (stop: no tool calls) <span class="src-tag">source: eval run 4 transcript (evals/run4_transcripts.md, case la_vs_sna), real model output</span></summary><pre>**LAX (for "LA") is more congested than SNA (Santa Ana, John Wayne) on every utilization measure.** Congestion here means how heavily runways and seats are used. It is not measured delay.
+
+Data covers May 2025 to Apr 2026 (as of Apr 2026).
+
+| Metric | LAX | SNA |
+|---|---|---|
+| Passengers | 36,590,656 | 5,590,354 |
+| Commercial runways | 4 | 1 |
+| Passengers per runway per day | 25,062 | 15,316 |
+| Departures per runway per day | 185.5 | 141.4 |
+| Load factor | 82.1% | 80.4% |
+| Peak-month ratio | 1.16 | 1.10 |
+
+- LAX is highest on passengers per runway per day (ratio 1.64 vs SNA), departures per runway per day (1.31), load factor and peak-month ratio.
+- **Trend:** SNA is growing (passengers +5.5%, seats +4.1%), while LAX is shrinking (passengers −3.3%, seats −1.7%).
+- **Expansion Pressure Score:** SNA scores 73.9 and LAX 63.9, on a 0 to 100 scale. SNA's score is driven by passengers per runway. LAX's is driven by load factor. SNA leads on growth and demand gap, which is why it scores higher despite being less congested.
+
+**Caveats:**
+- The score measures demand pressure, not physical terminal capacity.
+- Runway count is only a rough capacity proxy.
+- The data is about six months old.
+- There is no delay, gate or terminal data.
+
+I can pull demand-pressure signals for either airport, or re-rank them with different weights, if that would help.</pre></details><p>Cross-check: every figure in the final table (36,590,656 and 5,590,354 passengers; 4 and 1 commercial runways; 25,062 and 15,316 per runway per day; 185.5 and 141.4 departures; 82.1% and 80.4% load factor; 1.16 and 1.10 peak ratio; ratios 1.64 and 1.31; SNA +5.5% and LAX -3.3% passengers; scores 73.9 and 63.9) appears in tool result 3. The number audit in the evals checks exactly this for every eval answer.</p><h3 id="p1-concepts">Agent engineering concepts</h3><div class="concept"><div class="ctitle">Agent engineering concept: the tool-calling loop</div><p>An LLM cannot call your code. It can only emit text. A tool-calling loop gives it a menu of functions (names, descriptions, JSON schemas); the model replies either with a final answer or with a request "call function X with these arguments"; your code runs it, appends the result to the conversation, and calls the model again. Repeat until the model answers without a tool request.</p><p><b>Backend analogy.</b> An orchestrator or saga where the next step is chosen at run time by a remote, non-deterministic service instead of an if/else. Your code is the executor and the guard; the model is the planner.</p><p><b>In this project.</b> The loop is core/agent.py:97. The model chose 3 tool calls here and could have chosen different ones.</p><p><b>In production.</b> The same loop, plus streaming output, per-user budgets (tokens, tool calls), and an audit trail of every tool call.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: how tool schemas reach the model</div><p>Each tool is described to the model as a name, a natural-language description and a JSON Schema for its arguments. The model decides when to call it from the description and builds the arguments from the schema. The description is effectively part of the prompt.</p><p><b>Backend analogy.</b> An OpenAPI document that the caller reads at run time. The Pydantic model is the request DTO and also generates the schema, so validation and documentation cannot drift apart (like Swagger generated from a Spring controller or an ASP.NET model).</p><p><b>In this project.</b> core/tools.py:33 turns a Pydantic model into the schema with model_json_schema(). The same class validates the arguments when they come back (core/tools.py:76).</p><p><b>In production.</b> Tool descriptions get reviewed and versioned like code, because changing one changes behaviour. (Candidate change #1 is an example of a description that drifted from the data.)</p></div><div class="concept"><div class="ctitle">Agent engineering concept: why tool results go back as a user message</div><p>Anthropic's Messages API only has two roles, user and assistant. A tool request is a tool_use block inside an assistant message; its result is a tool_result block inside the next user message, linked by tool_use_id. The model must see its own request followed by the matching result. Other providers use a separate tool role; the repo keeps its own provider-neutral Message type and translates in the adapter.</p><p><b>Backend analogy.</b> Like correlation ids in a request/reply messaging pattern (Kafka request-reply): the reply carries the id of the request it answers.</p><p><b>In this project.</b> adapters/anthropic_llm.py:75 does the translation. The model class is core/interfaces.py:34.</p><p><b>In production.</b> Unchanged. If another provider were added, only a second adapter would be written.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: stop_reason</div><p>Every model reply says why it stopped: it finished its answer (end_turn), wants a tool (tool_use), hit the token limit (max_tokens), and so on. A loop can branch on it.</p><p><b>Backend analogy.</b> Like an HTTP status code on the response.</p><p><b>In this project.</b> This loop does not branch on it; it checks whether the reply contains tool calls (core/agent.py:104). The adapter logs it on every call (adapters/anthropic_llm.py:47) and warns on max_tokens (adapters/anthropic_llm.py:51). A weakness: a reply cut off by max_tokens in the middle of a tool call is not treated as an error (candidate change #2).</p><p><b>In production.</b> Alert on the rate of max_tokens stops; treat them as failures when they cut a tool call.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: why the model never does arithmetic here</div><p>Language models write plausible numbers; they do not compute reliably. The design rule is: numbers come from code, words come from the model.</p><p><b>Backend analogy.</b> Like never letting the UI compute an invoice total: the service computes it, the UI only displays it.</p><p><b>In this project.</b> Ratios, differences, points, leaders and the as-of date all come from the tool result. The system prompt forbids calculating (domain/system_prompt.md rule 1), and the evals include a number audit that fails any number not found in a tool result.</p><p><b>In production.</b> Same, plus monitoring: sample live answers and check numbers against tool results. Also known: the audit cannot tell a wrong number that equals another value in the result.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: prompt caching</div><p>Each model call resends the system prompt, the tool definitions and the whole history. The provider can keep the unchanged beginning of the request in a cache and charge much less (and answer faster) when the next call starts with the same text.</p><p><b>Backend analogy.</b> Like caching a stable prefix: the cache key is the request prefix, so editing the system prompt or a tool description invalidates it.</p><p><b>In this project.</b> One parameter, adapters/anthropic_llm.py:35. Measured: in eval run 4, 265,330 of 551,644 input tokens were read from the cache (docs/EVALS.md). Default cache lifetime is short (minutes); the exact value is unverified here.</p><p><b>In production.</b> Keep the prefix stable (no timestamps in the system prompt), watch the cache-hit rate on the dashboard, and put volatile text last.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: parallel tool calls</div><p>A model can request several independent tools in one turn. If your code runs them one after another, the user waits for the sum; run them together and they wait for the slowest.</p><p><b>Backend analogy.</b> Task.WhenAll in .NET, CompletableFuture.allOf in Java, Promise.all in JS.</p><p><b>In this project.</b> core/agent.py:144. Here the two searches are independent (assumed to share a turn; unverified). The compare call depends on both, so it comes in the next round.</p><p><b>In production.</b> Same, with a concurrency limit per user, so one chat cannot open 20 simultaneous calls to a client's backend.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: deterministic vs LLM parts</div><p>Split every feature into the part that must be repeatable and checkable (data, scoring, validation, errors) and the part that needs language (understanding the question, choosing tools, explaining). Give the model only the second.</p><p><b>Backend analogy.</b> Like keeping business rules in the domain service and letting a template engine do the wording.</p><p><b>In this project.</b> MODEL: which tool, which airport codes, how to phrase the answer. CODE: everything else. The same ranking is also served with no model at GET /ranking.</p><p><b>In production.</b> The line between them is what you can test, version and audit; keep it this crisp.</p></div><div class="concept"><div class="ctitle">Agent engineering concept: hallucination control (first part)</div><p>A model hallucinates when it states things it was not given. Controls: do not give it calculations to do, give it the facts and caveats, tell it what to say when data is missing, and test for violations.</p><p><b>Backend analogy.</b> Like validating at every boundary rather than trusting the caller.</p><p><b>In this project.</b> Numbers from tools; caveats attached by code (domain/config.yaml); "not measured" wording in the prompt; evals that check it. Pass 4 covers the number audit and the judge.</p><p><b>In production.</b> Add online sampling and a regression set built from real bad answers.</p></div><p><em>Concepts coming in later passes:</em> max iterations and timeouts (pass 3), evals vs unit tests and LLM-as-judge (pass 4), percentiles and weights (pass 2).</p><h3 id="p1-candidates">Candidate changes found in this pass (not fixed)</h3><table class="plain"><tr><th>#</th><th>What</th><th>Evidence</th><th>Risk of changing it</th></tr><tr><td>1</td><td><b>The compare_airports tool description names a field that does not exist.</b> It says <code>'highest_by_metric'</code>; the result field is <code>comparison_by_metric</code>. I thought I had updated this description when I added points/leaders/spread in run 4, but that edit silently did not apply (the rank_airports description did change). So run 4 ran with the stale description; the system prompt already names the correct field (domain/system_prompt.md:4).</td><td>domain/tools.py:117; grep shows no <code>highest_by_metric</code> anywhere else in the code. Also docs/EVALS.md says tool descriptions were updated; that is true for rank_airports only.</td><td>Low code risk (one string). But any text change can move eval results by itself, so a fix needs another run (about $1) before I could claim an effect; and the docs sentence in EVALS.md should be corrected either way.</td></tr><tr><td>2</td><td>A reply cut off by <code>max_tokens</code> is only logged. If the cut falls inside a tool_use block, the loop may run a half-formed call or treat a truncated text as final.</td><td>adapters/anthropic_llm.py:51: warning only. Not observed in any eval run (unverified for tool blocks).</td><td>Low. Raise LLMError on max_tokens when tool calls are present. Small behaviour change, needs a test.</td></tr><tr><td>3</td><td>Session history keeps every tool result in full and resends it on each follow-up. The compare result alone is several KB, so long chats grow in tokens, cost and latency.</td><td>core/agent.py:93; there is no trimming or summarising.</td><td>Medium. Trimming old tool results can make a follow-up lose a number the model should quote. Mitigation by prompt caching is partial. Better left as documented future work.</td></tr><tr><td>4</td><td>"LA" returns five matches (LAX, Las Vegas, Lake Charles...) before the model picks LAX; the choice depends on the model reading the alias note.</td><td>domain/search.py:21. Documented in DECISIONS.md; the eval passes.</td><td>Low. Only worth changing if a real failure appears.</td></tr></table><h3 id="p1-qa">Interview questions: pass 1</h3><div class="qa"><details><summary><b>Q1.</b> Why did you write the agent loop yourself instead of using LangChain or another framework?</summary><p>The loop is about 190 lines and I can explain every branch: the iteration cap, the retry, the parallel tools, what is saved on failure. A framework would hide those behaviours, and they are the reliability questions an enterprise asks. The cost is that I own bugs a library would have fixed.</p><p class="ptr">Point at: <code>core/agent.py:97</code></p></details><details><summary><b>Q2.</b> Why no RAG?</summary><p>There is no document collection to search: the knowledge the agent needs is a few definitions and caveats, which live in config and are returned by get_methodology. The facts that matter are structured numbers, which come from queries, not from text retrieval. If the client had master plans or FAA reports, I would add retrieval for those documents only.</p><p class="ptr">Point at: <code>domain/analytics.py:553</code></p></details><details><summary><b>Q3.</b> Why no MCP?</summary><p>The tools run in the same process as the agent, so MCP would add a network hop and a server to run for no benefit today. The tools are plain functions with schemas, so exposing them over MCP later is a thin wrapper if another client, like a desktop assistant, needs the same tools.</p><p class="ptr">Point at: <code>domain/tools.py:54</code></p></details><details><summary><b>Q4.</b> Why Postgres when you load a snapshot of CSV files?</summary><p>In a real engagement the backend is a database or an API, so the code goes through a repository interface and Postgres is the realistic implementation; the in-memory one runs tests, evals and the CLI. The snapshot means no external API on the request path. If the data were this small and static forever, flat files would be enough, and I say so in DECISIONS.md.</p><p class="ptr">Point at: <code>domain/repository.py:51</code></p></details><details><summary><b>Q5.</b> Why eight narrow tools instead of one "run SQL" tool?</summary><p>Narrow tools let code guarantee the numbers, validate inputs and attach caveats; free SQL would let the model invent its own calculation and read any table. Narrow tools also make evals simple: I can assert which tool was called with which arguments.</p><p class="ptr">Point at: <code>domain/tools.py:54</code></p></details><details><summary><b>Q6.</b> How does the model know which tools exist and how to call them?</summary><p>Every call sends the tool definitions: name, description and a JSON schema generated from the Pydantic argument class. The model picks a tool from the description and fills in arguments from the schema; my code validates them again before running.</p><p class="ptr">Point at: <code>core/tools.py:33</code></p></details><details><summary><b>Q7.</b> Why do tool results go back to the model instead of straight to the user?</summary><p>The model has to turn data into an explanation and decide whether it needs another tool, as it did here: search first, then compare. The result is appended as a tool_result block in the next user message, linked to the request by an id.</p><p class="ptr">Point at: <code>core/agent.py:111</code></p></details><details><summary><b>Q8.</b> What stops the model from making up the 25,062 number?</summary><p>Three layers: it never has to compute it, because compare_airports returns it; the prompt forbids calculating; and the evals include a number audit that fails any number in an answer that is not in a tool result. It is not a proof: the audit cannot catch a wrong number that happens to equal another value in the result.</p><p class="ptr">Point at: <code>domain/analytics.py:404</code></p></details><details><summary><b>Q9.</b> Why async, and why gather?</summary><p>Model and tool calls are slow I/O, so one process can serve many chats while they wait. gather makes independent tool calls run together, so a two-airport lookup costs the slowest call, not the sum. For a voice agent that matters.</p><p class="ptr">Point at: <code>core/agent.py:144</code></p></details><details><summary><b>Q10.</b> What happens on the first request after a restart, and is that a problem?</summary><p>The first tool call builds the national KPI table for all 228 airports under a lock, then every later call reuses it. It adds a short delay once per process; I have not measured it here (unverified). In production I would warm it at startup or on a health check.</p><p class="ptr">Point at: <code>domain/analytics.py:76</code></p></details></div><h3 id="p1-mine">My 3 questions to you, and your answers</h3><p>The three questions I asked after pass 1:</p><ol>
+<li>Walk me through what happens between the user pressing Enter and the answer appearing. Which parts are deterministic, which are the model?</li>
+<li>How do you know the agent did not make up the 25,062 figure? What stops the model from computing numbers?</li>
+<li>Why does the loop send tool results back to the model instead of returning them to the user, and what stops it looping forever?</li></ol>
+<p><span class="verdict pending">answers pending</span> Your answers and my verdicts will be added here once you reply.</p></details></section></main></div><script>
+function setAll(open){document.querySelectorAll('details').forEach(d=>d.open=open)}
+document.getElementById('expand').onclick=()=>setAll(true);
+document.getElementById('collapse').onclick=()=>{document.querySelectorAll('details').forEach(d=>d.open=false);
+ document.querySelectorAll('details.sec').forEach(d=>d.open=true)};
+</script></body></html>
