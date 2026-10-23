@@ -1,6 +1,7 @@
 # Scoring settings, definitions and the caveat texts the tools attach to their answers.
 
 scoring:
+  score_name: Expansion Pressure Score
   weights:                     # weighted national percentiles; must sum to 1
     growth: 0.25
     load_factor: 0.25

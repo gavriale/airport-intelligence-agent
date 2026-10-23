@@ -9,6 +9,7 @@ from domain.scoring import COMPONENTS, WEIGHT_TOLERANCE
 
 
 class ScoringConfig(BaseModel):
+    score_name: str
     weights: dict[str, float]
     window_months: int
     high_load_factor_pct: float

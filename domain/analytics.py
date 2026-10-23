@@ -280,10 +280,14 @@ class Analytics:
                 "value": _round(weighted_score(scored, weights)),
                 "components": self._components_out(scored, weights),
                 "compared_with_airports": snap.national.reference_size,
+                "compared_with": (
+                    f"{snap.national.reference_size} scored peer airports nationally"
+                ),
             }
             if scored
             else {"value": None, "not_scored_reasons": snap.national.not_scored[airport.iata]}
         )
+        score = {"name": self._config.scoring.score_name, **score}
         return self._envelope(
             snap,
             {
@@ -326,6 +330,7 @@ class Analytics:
         return self._envelope(
             snap,
             {
+                "score_name": self._config.scoring.score_name,
                 "scope": region or (", ".join(scope_states) if scope_states else "national"),
                 "scored_airports_in_scope": len(ranking),
                 "ranking": shown,
@@ -363,7 +368,11 @@ class Analytics:
             comparable[code] = self._kpi_summary(kpis)
         return self._envelope(
             snap,
-            {"airports": rows, "comparison_by_metric": self._comparison(comparable)},
+            {
+                "score_name": self._config.scoring.score_name,
+                "airports": rows,
+                "comparison_by_metric": self._comparison(comparable),
+            },
             ["data", "congestion", "cargo", "score"],
         )
 

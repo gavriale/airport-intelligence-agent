@@ -6,31 +6,32 @@
 
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> ok
 
-**Top New England candidates by Expansion Pressure Score** (data: May 2025 to Apr 2026, compared with the prior 12 months; latest month Apr 2026)
+Top New England airports by Expansion Pressure Score (0–100). The data covers May 2025 to Apr 2026, compared with the prior 12 months.
 
 | Rank | Airport | Score | Passenger growth | Load factor |
 |---|---|---|---|---|
 | 1 | Bangor (BGR) | 70.6 | +12.8% | 80.4% |
 | 2 | Portland, ME (PWM) | 69.5 | +2.8% | 82.8% |
-| 3 | Burlington (BTV) | 67.0 | −0.1% | 83.0% |
-| 4 | Boston Logan (BOS) | 63.7 | −2.4% | 81.7% |
+| 3 | Burlington (BTV) | 67.0 | -0.1% | 83.0% |
+| 4 | Boston Logan (BOS) | 63.7 | -2.4% | 81.7% |
 | 5 | New Haven (HVN) | 63.0 | +10.1% | 77.2% |
 
-The scores are close together (63.0 to 70.6), so I wouldn't treat the order as decisive.
+**What stands out**
+- **Bangor** leads on growth (91st national percentile) and has a high peak-month ratio.
+- **Portland** has the highest load factor in the group (91st percentile).
+- **Burlington** has the highest demand-gap percentile (96.7), but its traffic is flat.
+- **Boston** is by far the largest, at about 21.0M passengers. It also has high per-runway use (89.7th percentile), but its traffic fell.
+- **New Haven** is growing quickly, but its load factor is lower (39.7th percentile).
 
-- **Bangor** ranks first mainly on growth (91st percentile nationally) and its demand gap. Its passenger volume is small, at about 442,000.
-- **Portland and Burlington** rank on high load factors (about the 91st percentile) and strong peak-month ratios. Burlington's demand gap is in the 96.7th percentile, but its passenger count is flat.
-- **Boston** ranks on scale and runway use. It has about 4.2 million passengers per commercial runway (89.7th percentile), but its passengers fell 2.4%.
-- **New Haven** has strong growth, but its load factor is lower.
-
-**Caveats:**
-- The score measures demand pressure. It does not measure physical terminal capacity, gate availability or profitability. I have no terminal, gate or construction data.
-- The data is about six months old.
+**Caveats**
+- The score measures demand pressure, not physical terminal capacity. I have no terminal, gate or construction data.
+- The latest month is Apr 2026, so the data is about six months old.
+- The scores are close together (63.0 to 70.6), so I wouldn't treat the order as decisive.
 - Runway count is only a rough capacity proxy.
 
-I can compare any of these in detail, such as BGR against PWM. I can also re-rank with more weight on growth or on congestion.
+I can compare any of these airports side by side, or check for unmet-demand signals at your top choices.
 
-Failures: ["ungrounded number '442,000' in '...ger volume is small, at about 442,000. - **Portland and Burlington*...'"]
+Failures: ["judge (majority): not grounded (The answer says Portland has the highest load factor in the group, but Burlington's is higher (83.01% vs 82.75%, 91.9th vs 91.0th percentile).)"]
 
 ## ne_reweight (run 1) PASS
 
@@ -38,60 +39,58 @@ Failures: ["ungrounded number '442,000' in '...ger volume is small, at about 442
 
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> ok
 
-**Top New England candidates by Expansion Pressure Score** (data: May 2025–Apr 2026 against the prior 12 months, as of Apr 2026; 10 airports scored)
+Top New England airports by Expansion Pressure Score (0–100). The data covers May 2025 to Apr 2026, compared with the prior 12 months.
 
-| Rank | Airport | Score | Passengers | Growth | Load factor |
-|---|---|---|---|---|---|
-| 1 | Bangor (BGR) | 70.6 | 441,517 | 12.8% | 80.39 |
-| 2 | Portland, ME (PWM) | 69.5 | 1,277,351 | 2.8% | 82.75 |
-| 3 | Burlington (BTV) | 67.0 | 702,627 | -0.1% | 83.01 |
-| 4 | Boston Logan (BOS) | 63.7 | 20,983,745 | -2.4% | 81.73 |
-| 5 | New Haven (HVN) | 63.0 | 732,816 | 10.1% | 77.24 |
+| Rank | Airport | Score | Passenger growth | Load factor |
+|---|---|---|---|---|
+| 1 | Bangor (BGR) | 70.6 | 12.8% | 80.4% |
+| 2 | Portland, ME (PWM) | 69.5 | 2.8% | 82.8% |
+| 3 | Burlington (BTV) | 67.0 | -0.1% | 83.0% |
+| 4 | Boston Logan (BOS) | 63.7 | -2.4% | 81.7% |
+| 5 | New Haven (HVN) | 63.0 | 10.1% | 77.2% |
 
-**What stands out**
-- **BGR** leads on growth (91st national percentile) and its peak-month ratio is high. It is a small airport, though (35th percentile for scale).
-- **PWM** has a high load factor (91st percentile) and moderate growth.
-- **BTV** has the highest load factor in the group and the strongest demand-gap percentile (96.7), even though passengers are flat.
-- **BOS** has by far the most passengers per runway (89.7th percentile), but its traffic fell.
-- **HVN** is growing fast (10.1%), but its load factor is lower.
+All 10 New England airports in scope were scored. The top five are listed here.
 
-**Caveats**
-- The score measures demand pressure, not physical terminal capacity, profitability, or gate and terminal condition. I have no terminal, gate or construction data.
-- The data is about six months old.
-- Scores are close together (63.0 to 70.6), so the ranking is not a strong separation. The weights are judgmental.
+- **Bangor** leads on strong growth and a high peak-month ratio (1.72). It is a small airport, with about 442,000 passengers.
+- **Portland and Burlington** score mainly on high load factors. Burlington also has the largest demand gap of the five (7.12). Its passenger growth is flat.
+- **Boston** has the heaviest runway use (about 4.2 million passengers per commercial runway) and the largest scale. Its passenger volume fell 2.4%.
+- **New Haven** is growing quickly (10.1%), but its load factor is lower.
 
-I can run a side-by-side comparison of the top few, or re-rank with more weight on growth or load factor. Which would you like?
+**Caveats:**
+- The score measures demand pressure, not physical terminal capacity or profitability.
+- The data has no terminal, gate or construction information.
+- The latest month is about six months old.
+- Runway count is only a rough capacity proxy.
+
+I can compare any of these airports side by side, or re-rank with more weight on growth or load factor.
 
 **User:** What if we weigh passenger growth much more heavily? Does the ranking change?
 
 - tool `rank_airports` {"region": "New England", "top_n": 5, "weights": {"growth": 0.6}} -> ok
 
-Yes, the ranking changes. I raised the growth weight from 0.25 to 0.6. The tool rescaled the other weights in proportion: load factor 0.133, passengers per runway 0.107, demand gap 0.08, scale 0.053 and peak 0.027. The data covers May 2025–Apr 2026, as of Apr 2026.
+Yes, the ranking changes. I raised the growth weight to 0.6, up from 0.25. The other weights shrank in proportion: load factor 0.133, passengers per runway 0.107, demand gap 0.08, scale 0.053 and peak 0.027. The data period is the same, May 2025 to Apr 2026.
 
 | Rank | Airport | Score | Growth | Previous rank |
 |---|---|---|---|---|
 | 1 | Bangor (BGR) | 80.1 | 12.8% | 1 |
 | 2 | New Haven (HVN) | 73.0 | 10.1% | 5 |
 | 3 | Portland, ME (PWM) | 63.4 | 2.8% | 2 |
-| 4 | Manchester (MHT) | 57.2 | 4.7% | not in the top 5 |
+| 4 | Manchester, NH (MHT) | 57.2 | 4.7% | not in top 5 |
 | 5 | Burlington (BTV) | 52.4 | -0.1% | 3 |
 
-**What changed**
-- **BGR** stays first, and its lead over second place is wider.
-- **HVN** moves up from 5th to 2nd. Its growth is strong, even though its load factor percentile is low (39.7).
-- **PWM** and **BTV** drop. Both rank high on load factor but have weak growth.
-- **MHT** enters the top 5 on moderate growth (4.7%).
-- **BOS** falls out of the top 5. Its traffic declined.
+- **Bangor** stays first and its lead widens.
+- **New Haven** rises from fifth to second, driven by its 10.1% growth.
+- **Manchester** enters the top five. Its growth is 4.7%, but its load factor is lower (75.5%).
+- **Boston** drops out of the top five. Its passenger volume fell 2.4%.
+- **Portland and Burlington** fall because their rankings relied on high load factors, not growth.
 
-**Caveats**
-- This is still a demand-pressure score. It says nothing about physical terminal capacity or profitability.
-- A growth-heavy weighting favors airports that grew from a small base. One year of growth may not persist.
+Growth is a one-year change, and it is largest at small airports with lower passenger counts. The score still measures demand pressure, not physical terminal capacity. The data is also about six months old.
 
-I can compare BGR and HVN side by side, including their runway use and peak-month ratios. Would you like that?
+I can run a demand-pressure check on Bangor or New Haven. That would show whether seats are keeping pace with passengers.
 
 No failures.
 
-## la_vs_sna (run 1) FAIL
+## la_vs_sna (run 1) PASS
 
 **User:** Compare LA and Santa Ana airport congestion levels.
 
@@ -99,12 +98,11 @@ No failures.
 - tool `search_airports` {"query": "Santa Ana"} -> ok
 - tool `compare_airports` {"iatas": ["LAX", "SNA"]} -> ok
 
-**LAX is more congested than SNA on every runway and seat-use measure. SNA has the higher Expansion Pressure Score.**
-
-I used LAX (Los Angeles International) for "LA" and SNA (John Wayne Orange County) for "Santa Ana". The data covers May 2025 to Apr 2026, compared with the prior 12 months.
+**LAX is more congested than SNA on every measure of runway and seat use.** I used LAX for "LA" and SNA for Santa Ana (John Wayne Orange County). Congestion here means how heavily runways and seats are used. It is not measured delay. The data covers May 2025 to Apr 2026.
 
 | Metric | LAX | SNA |
 |---|---|---|
+| Passengers | 36.6M | 5.6M |
 | Commercial runways | 4 | 1 |
 | Passengers per runway per day | 25,062 | 15,316 |
 | Departures per runway per day | 185.5 | 141.4 |
@@ -113,45 +111,44 @@ I used LAX (Los Angeles International) for "LA" and SNA (John Wayne Orange Count
 | Passenger growth | -3.3% | +5.5% |
 | Expansion Pressure Score | 63.9 | 73.9 |
 
-- **Runway use:** LAX handles about 1.64 times SNA's passengers per commercial runway per day. It handles about 1.31 times SNA's departures per runway per day.
-- **Seat use:** The load factor gap is small, 1.7 points.
-- **Trend:** LAX traffic is shrinking, with passengers down 3.3% and seats down 1.7%. SNA is growing, with passengers up 5.5% and seats up 4.1%. SNA's passenger growth is ahead of its seat growth, which is why its demand gap is positive (+1.4 points, against -1.6 for LAX).
+- **Runway use:** LAX handles 1.64 times SNA's passengers per runway per day. Its departures per runway per day are 1.31 times SNA's.
+- **Load factor:** The gap is small, at 1.7 points.
+- **Trend:** SNA is the one growing. Its passengers rose 5.5% and its seats rose 4.1%. LAX's passengers fell 3.3%. That is why SNA has the higher Expansion Pressure Score, even though LAX is more congested today.
 
-**Caveats**
-- "Congestion" here means how heavily runways and seats are used. It is not measured delays, because I have no delay history.
-- The score measures demand pressure, not physical terminal capacity. I have no terminal or gate data.
+**Caveats:**
+- The score measures demand pressure, not physical terminal capacity.
 - The data is about six months old.
+- There is no delay history, and no terminal or gate data.
 
-I can pull the demand-pressure signals for either airport, or compare them with other Southern California airports.
+I can check current FAA delay programs for both airports, or look at demand-pressure signals such as months with a high load factor.
 
-Failures: ['judge: not grounded (Every figure matches the evidence, but the answer calls the score the "Expansion Pressure Score", and that name appears nowhere in the evidence, which only labels it "score" and says it measures demand pressure.)']
+No failures.
 
-## anc_long_haul (run 1) FAIL
+## anc_long_haul (run 1) PASS
 
 **User:** What is the percentage of long haul flights out of Anchorage airport?
 
 - tool `search_airports` {"query": "Anchorage"} -> ok
 - tool `get_distance_profile` {"iata": "ANC"} -> ok
 
-I can't give you a long-haul percentage for Anchorage (ANC). The exact share needs route-level flight data, and this dataset doesn't have it.
+I can't give you an exact long-haul percentage for Anchorage (ANC). The data has no route-level distances, so that share can't be computed. The tool also gives no long-haul cutoff.
 
-The tool does give proxies. The data covers May 2025 to Apr 2026 (as of Apr 2026), counted by origin airport:
+The tool does give these proxies for ANC. The data covers May 2025 to Apr 2026, and the latest month is about six months old.
 
-| Proxy | ANC |
+| Proxy | Value |
 |---|---|
-| International share of departures | 15.4% |
+| International share of departures | 15.4% (13,327 of 86,373) |
 | Average flight distance | 1,900 mi |
 | Average domestic distance | 1,458 mi |
 | Average international distance | 4,323 mi |
 
-Caveats on these proxies:
-- **Mostly cargo:** International departures average only 4.4 seats per flight, so they are mostly all-cargo flights. The international share and the distances describe cargo as much as passenger service. They shouldn't be read as passenger long-haul.
-- **Rough proxy:** The international share overcounts short international flights, such as those to Canada. It undercounts long domestic flights, such as those to the Lower 48.
-- **Departure counts include cargo flights.** Seats, passengers and load factor do not.
+**Caveats**
+- **Cargo:** International departures at ANC average 4.4 seats per flight, so they are mostly all-cargo. The international share and the distances therefore describe cargo as much as passenger service. Departure counts include all-cargo flights.
+- **International share is approximate:** It overcounts short international flights, such as those to Canada. It undercounts long domestic ones.
 
-I can pull ANC's passenger demand and expansion pressure score. A long-haul figure would need route-level flight data.
+Passenger long-haul service can't be separated out with this data. That would take route-level flight data. I can compare ANC with other airports on these proxies if that helps.
 
-Failures: ["judge: not grounded (The answer adds that the international share undercounts long domestic flights 'such as those to the Lower 48'. The evidence only says 'long domestic ones' and does not mention the Lower 48. The figures and the null long-haul share otherwise match.)"]
+No failures.
 
 ## anc_long_haul (run 2) PASS
 
@@ -160,9 +157,9 @@ Failures: ["judge: not grounded (The answer adds that the international share un
 - tool `search_airports` {"query": "Anchorage"} -> ok
 - tool `get_distance_profile` {"iata": "ANC"} -> ok
 
-I can't give you a long-haul percentage for Anchorage (ANC). The exact share needs route-level flight distances, and the tools don't have them.
+I can't give you a long-haul percentage for Anchorage (ANC). The exact share needs route-level flight data, and I don't have it.
 
-The tools do give proxies. The data covers May 2025 to Apr 2026, as of Apr 2026.
+The tool does give proxies. The data covers May 2025 to Apr 2026, as of Apr 2026.
 
 | Proxy | ANC |
 |---|---|
@@ -170,14 +167,12 @@ The tools do give proxies. The data covers May 2025 to Apr 2026, as of Apr 2026.
 | Average flight distance | 1,900 mi |
 | Average domestic distance | 1,458 mi |
 | Average international distance | 4,323 mi |
-| Departures (domestic / international) | 73,046 / 13,327 |
 
 **Caveats**
-- **Mostly cargo:** International departures average 4.4 seats per flight, so they are mostly all-cargo flights. The international share and the distance figures therefore describe cargo as much as passenger service.
-- **Rough proxy:** The international share overcounts short international flights, such as those to Canada. It undercounts long domestic ones.
-- **All-cargo flights:** Departure counts include them. Passengers, seats and load factor are not affected.
+- **Mostly cargo:** International departures average 4.4 seats per flight, so they are mostly all-cargo flights. The international share and the distances therefore describe cargo operations as much as passenger service. Departure counts include all-cargo flights.
+- **The international share is a rough stand-in for long-haul:** It overcounts short international flights, such as those to Canada. It undercounts long domestic flights.
 
-I could not tell you how many of these flights are long-haul passenger flights. Answering that would take route-level flight data. I can pull the demand-pressure profile for ANC or compare it with other airports if you'd like.
+I can also compare ANC's traffic and demand-pressure indicators with other airports. A true long-haul share would need route-level flight data.
 
 No failures.
 
@@ -188,51 +183,59 @@ No failures.
 - tool `search_airports` {"query": "Anchorage"} -> ok
 - tool `get_distance_profile` {"iata": "ANC"} -> ok
 
-I can't give you a percentage of long-haul flights at Anchorage (ANC, Ted Stevens Anchorage International). The data has no route-level distances, so the exact share can't be computed. The tool returns proxies instead.
+I can't give you a long-haul percentage for Anchorage (ANC). The exact share needs route-level flight data, and this dataset doesn't have it.
 
-**Proxies for ANC, May 2025 to Apr 2026 (data as of Apr 2026):**
+The tool does return some proxies. They cover May 2025 to Apr 2026, as of Apr 2026, and are counted by origin airport:
 
-| Proxy | Value |
+| Proxy | ANC |
 |---|---|
-| International share of departures | 15.4% |
+| International share of departures | 15.4% (13,327 of 86,373) |
 | Average flight distance | 1,900 mi |
 | Average domestic distance | 1,458 mi |
 | Average international distance | 4,323 mi |
 
-**Caveats:**
-- **Mostly cargo:** International departures average 4.4 seats per flight, so they are mostly all-cargo flights. The international share and the distance figures therefore describe cargo as much as passenger service.
-- **Rough proxy:** The international share overcounts short international flights, such as those to Canada. It undercounts long domestic flights.
-- **Cargo in counts:** Departure counts include all-cargo flights. The data comes from BTS T-100 and counts flights by origin airport.
+Caveats:
+- **Mostly cargo:** International departures average 4.4 seats per flight, so they are mostly all-cargo flights. The international share and the distances therefore describe cargo as much as passenger service. Departure counts include all-cargo flights.
+- **The international share is only an approximation:** It overcounts short international flights, such as those to Canada. It also undercounts long domestic flights.
 
-To get the actual long-haul share, you would need route-level flight data. I can also compare ANC with other airports on these proxies, or look at its passenger demand signals, if that helps.
+I can pull ANC's demand-pressure signals or compare it with other airports. Both cover passenger traffic, which would show the passenger side more clearly.
 
 No failures.
 
-## sfo_unmet (run 1) FAIL
+## sfo_unmet (run 1) PASS
 
 **User:** What is the unmet flight demand in SFO airport and why?
 
 - tool `demand_pressure` {"iata": "SFO"} -> ok
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 
-**Short answer:** Unmet demand at SFO can't be measured directly. The signals suggest moderate pressure, not a large unmet-demand problem. The data covers May 2025 to Apr 2026 (as of Apr 2026, so about six months old).
+**Short answer:** I can't give you a figure for SFO's unmet demand. The data doesn't measure it. It only shows signals that demand might exceed capacity, and those signals are mixed.
 
-**What the signals show**
-- **Load factor:** 82.6% over the year. It was at or above 85% in only 1 of 12 months (peak 89.4% in Jun 2025).
-- **Passengers vs. seats:** Passengers grew 3.4% and seats grew 3.4%, so the demand gap is 0.0 points. Demand is not outpacing the seats offered.
-- **Recovery vs. 2019:** Passengers are at 95.6% of 2019 and seats at 95.0%. Departures are at 89.3%.
-- **Runway use:** 4 commercial runways handle about 18,248 passengers per runway per day. That puts SFO at the 94.5th percentile nationally.
-- **Expansion Pressure Score:** 77.4 out of 100. It is driven by scale, runway use and load factor. Growth is middling (59.9th percentile) and peak seasonality is low (31.8th percentile).
+**What the data shows (May 2025 to Apr 2026, as of Apr 2026):**
 
-**Why (hypotheses, not findings)**
-- Heavy use of a small runway set, together with high load factors, may mean the airport is capacity-constrained. Airlines may be filling seats rather than adding flights.
-- Departures are further below 2019 than passengers are. That could mean airlines are using larger aircraft or fuller flights. The data doesn't confirm this.
+| Signal | SFO |
+|---|---|
+| Load factor | 82.6% |
+| Months at or above 85% load factor | 1 of 12 (peak 89.4% in Jun 2025) |
+| Passenger growth vs. seat growth | 3.4% vs. 3.4% (demand gap 0.0 points) |
+| Passengers vs. 2019 | 96% |
+| Seats vs. 2019 | 95% |
+| Passengers per commercial runway per day | 18,248 |
+| Expansion Pressure Score | 77.4 (228 airports scored) |
 
-**Limits:** The score measures demand pressure, not physical terminal capacity. I have no terminal, gate, delay or route-level data.
+**What this suggests:**
+- **Runway use is heavy.** Passengers per runway is at the 94.5th percentile nationally. SFO has 4 commercial runways.
+- **Load factor is high.** It is at the 88.8th percentile.
+- **Demand is not clearly outrunning supply.** Passengers and seats grew at the same rate, so there is no gap. Load factor reached the 85% threshold in only one month.
+- **Traffic is still slightly below 2019.** This doesn't point to unmet demand.
 
-I can compare SFO with other West Coast airports, such as LAX or SEA, if that would help.
+**Why (hypothesis only):** The data doesn't show why. One possibility is that SFO's pressure comes from how intensively its runways are used, not from demand being turned away. Testing that would need route-level and delay data, which I don't have.
 
-Failures: ["ungrounded number '100' in '...Pressure Score:** 77.4 out of 100. It is driven by scale, runwa...'"]
+**Caveats:** The data is about six months old. It counts passengers by origin airport. The score measures demand pressure, not terminal or gate capacity.
+
+I can compare SFO with other California airports if that would help.
+
+No failures.
 
 ## sfo_unmet (run 2) PASS
 
@@ -241,85 +244,84 @@ Failures: ["ungrounded number '100' in '...Pressure Score:** 77.4 out of 100. It
 - tool `demand_pressure` {"iata": "SFO"} -> ok
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 
-**Short answer:** Unmet demand at SFO can't be measured directly with this data. The signals point to moderate pressure, not a clear shortfall.
+**Short answer:** I can't give you a figure for SFO's unmet demand. The data doesn't measure it directly. It only shows signals that demand might exceed capacity, and those signals are mixed.
 
-**What the signals show** (May 2025 to Apr 2026, data as of Apr 2026, about six months old):
+**Data period:** May 2025 to Apr 2026, compared with the prior 12 months. The data is about six months old.
 
 | Signal | SFO |
 |---|---|
 | Load factor | 82.6% |
-| Months at or above 85% load factor | 1 of 12 (peak 89.4%, Jun 2025) |
-| Passenger growth vs seat growth | 3.4% vs 3.4% (gap 0.0 points) |
-| Passengers vs 2019 | 96% |
-| Seats vs 2019 | 95% |
-| Departures vs 2019 | 89.3% |
-| Expansion Pressure Score | 77.4 (228 airports compared) |
+| Months at or above 85% load factor | 1 of 12 (Jun 2025, peak 89.4%) |
+| Passenger growth vs seat growth | 3.4% vs 3.4% (demand gap 0.0 points) |
+| Passengers vs 2019 | 96% of the 2019 level |
+| Seats vs 2019 | 95% of the 2019 level |
+| Passengers per commercial runway per day | 18,248 |
+| Expansion Pressure Score | 77.4 (228 airports scored) |
 
-- Seats grew as fast as passengers. That means no sign that demand is outrunning added capacity.
-- Load factor is high compared with other airports (88.8th percentile), and passengers per commercial runway are in the 94.5th percentile (4 runways). Those two readings drive most of the score.
-- Traffic is still just below 2019 levels, so SFO has not fully recovered.
+**What the signals show:**
+- Seats are fairly full, but only in one month did load factor reach the 85% threshold.
+- Passengers and seats grew at the same rate. Airlines added capacity as fast as demand grew, so there is no sign of a widening gap.
+- Volume per runway is high. SFO is in the 94.5th percentile for passengers per runway and the 96.7th for scale. Those two components, plus load factor at the 88.8th percentile, drive most of the score.
+- SFO is still below 2019 passenger and seat levels.
 
-**Why (hypotheses, not findings):** The high load factor and heavy runway use could mean airlines are filling the seats they offer, so capacity is tight in the busiest months. Departures are further below 2019 than seats are, which could mean airlines are using larger aircraft. Neither point is confirmed by this data.
+**Why (hypotheses, not findings):** The high score looks driven by heavy use of 4 runways rather than by demand clearly outrunning supply. If there is unmet demand, constraints such as runway capacity or airline schedule decisions could be behind it. The data can't confirm either.
 
-**Limits:** The score measures demand pressure, not terminal or gate capacity. There is no data on delays, routes, airlines or gates.
+**Limits:** The score measures demand pressure, not terminal or gate capacity. There is no delay, route or gate data. Testing for unmet demand would need data such as fares by route or delay history.
 
-I can compare SFO with other West Coast airports, or check live FAA delay status.
+I can compare SFO with other West Coast airports if that would help.
 
 No failures.
 
-## sfo_unmet (run 3) FAIL
+## sfo_unmet (run 3) PASS
 
 **User:** What is the unmet flight demand in SFO airport and why?
 
 - tool `demand_pressure` {"iata": "SFO"} -> ok
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 
-**Short answer:** The data doesn't measure unmet demand at SFO, so I can't give you a figure. It does give some signals that demand may be pressing on capacity. They are moderate, not extreme.
+**Short answer:** The data can't measure unmet demand at SFO. It only shows signals that demand may exceed capacity, and those signals are mixed.
 
-**What the signals show** (May 2025 to Apr 2026, data as of Apr 2026):
+**Signals (May 2025 to Apr 2026, data as of Apr 2026, about six months old):**
 
 | Signal | SFO |
 |---|---|
 | Load factor | 82.6% |
-| Months at or above 85% load factor | 1 of 12 (June 2025, peak 89.4%) |
-| Passenger growth vs seat growth | 3.4% vs 3.4% (gap 0.0 points) |
+| Months at or above 85% load factor | 1 of 12 (Jun 2025, peak 89.4%) |
+| Passenger growth vs seat growth | 3.4% vs 3.4% (demand gap 0.0 points) |
 | Passengers vs 2019 | 96% |
 | Seats vs 2019 | 95% |
-| Passengers per commercial runway per day | 18,248 |
+| Passengers per commercial runway per day | 18,248 (4 commercial runways) |
 | Expansion Pressure Score | 77.4 (compared with 228 airports) |
 
-**Why, as far as the signals go:**
-- Load factor is high. It is in the 88.8th percentile nationally.
-- Passengers per runway are heavy. They are in the 94.5th percentile, with 4 commercial runways.
-- Seats grew as fast as passengers. Airlines added capacity in step with demand, so there is no sign of a widening shortfall.
-- Full flights are a seasonal pattern, not a year-round one. Only June went above the 85% threshold.
-- Traffic and seats are still slightly below 2019 levels.
+**What this suggests:**
+- **Planes are fairly full, but not unusually so.** Load factor is in the 88.8th percentile nationally, and it only crossed 85% in one month.
+- **Airlines added seats as fast as passengers grew.** The 0.0-point demand gap shows no sign that demand is outrunning supply.
+- **Runways are heavily used.** Passengers per runway are in the 94.5th percentile, and that drives much of the score.
+- **Traffic is still below 2019.** Passengers are at 96% of 2019 and seats at 95%.
 
-**Hypothesis, not a finding:** SFO's high score may reflect a constrained runway system combined with strong demand at peak times. The data can't confirm this. Confirming it would need delay history, gate and terminal data, and route-level data.
+**Why (hypothesis, not a finding):** The score is high mainly because of SFO's scale and runway use, not because of a growing shortfall in seats. Any further reason, such as runway or gate limits, would need terminal, gate, or delay data. I don't have that data.
 
-**Caveats:** The data is about six months old. The score measures demand pressure, not physical terminal capacity.
+The score measures demand pressure, not physical terminal capacity. I can compare SFO with other large airports if you want.
 
-I can compare SFO with other West Coast airports if you want.
-
-Failures: ['judge: not grounded (The answer labels the 77.4 figure the "Expansion Pressure Score", but the evidence calls it only "score" and that name appears nowhere in it. It also says the percentiles are "nationally", when the evidence compares SFO with a set of 228 airports.)']
+No failures.
 
 ## carrier_concentration (run 1) PASS
 
 **User:** Which airline dominates Boston Logan?
 
 
-I can't tell you which airline dominates Boston Logan (BOS). My tools have no carrier-by-airport data, so I can't show airline market share, seat share or departures by carrier. I won't guess from memory, because I can't check it against the data here.
+I can't tell you which airline dominates Boston Logan. My tools have no carrier-by-airport data, so I can't see airline market share, seat share or flight counts at Logan. I won't guess from memory.
 
-For BOS, I can give you:
-- Airport-level traffic: passengers, growth, load factor and peak-month ratio.
-- Runway use: passengers and departures per runway per day.
-- Expansion Pressure Score: how it compares with other New England and national airports.
-- Demand signals: whether passengers are growing faster than seats.
-- Domestic and international mix: share of departures and average flight distance.
+For Boston Logan I can give you:
+- **Airport-level traffic:** passengers, growth, load factor and peak-month ratio.
+- **Runway use:** passengers and departures per commercial runway per day.
+- **Expansion Pressure Score:** how Logan compares with other airports and its New England peers.
+- **Demand-pressure signals:** passenger growth against seat growth, and recovery compared with 2019.
+- **Domestic and international split:** the share of departures that are domestic and international.
 
-To answer your question, you'd need carrier-by-airport traffic data, such as passengers or seats by airline at BOS.
+Answering your question would take carrier-by-airport traffic data, ideally with route-level detail.
 
-Would you like the BOS profile and demand-pressure signals, or a comparison with other major Northeast airports?
+Would you like the Logan profile and score, or a comparison with other New England airports?
 
 No failures.
 
@@ -327,16 +329,17 @@ No failures.
 
 **User:** Which airline dominates Boston Logan?
 
+- tool `search_airports` {"query": "Boston Logan"} -> ok
 
-I can't tell you which airline dominates Boston Logan (BOS). My data has no carrier-by-airport traffic, so I can't see airline market share, seat share or flight counts by carrier. Answering that would take carrier-level traffic data for BOS.
+I can't tell you which airline dominates Boston Logan (BOS). My tools have no carrier-by-airport data, so I can't see airline shares there.
 
-I can give you these airport-level figures for BOS instead:
-- Passenger volume, growth and load factor.
-- Runway count and passengers per runway.
-- Peak-month ratio and Expansion Pressure Score.
-- Domestic and international departure mix, and average flight distance.
+Here is what I can give you for BOS:
+- Traffic, growth and load factor
+- Runway use
+- The Expansion Pressure Score
+- The split between domestic and international departures
 
-I can also compare BOS with other New England or national airports. Would you like the BOS profile or a peer comparison?
+Answering the airline question would take carrier-by-airport traffic data, such as passengers or departures by airline at BOS. If you want, I can pull the BOS profile or compare it with other airports.
 
 No failures.
 
@@ -344,80 +347,82 @@ No failures.
 
 **User:** Which airline dominates Boston Logan?
 
+- tool `search_airports` {"query": "Boston Logan"} -> ok
 
-I can't tell you which airline dominates Boston Logan (BOS). My tools have no carrier-by-airport data, so I can't see airline shares of passengers, seats or departures there. Answering that would take carrier-level traffic by airport, ideally with route-level flight data.
+I used BOS (Boston Logan), but I can't tell you which airline dominates it. My tools have no carrier-by-airport data, so I can't see airline shares of passengers, flights or seats there.
 
-I can give you these for BOS instead:
-- **Traffic and growth:** passengers over the last 12 months, and growth.
-- **Load factor and runway use:** how heavily seats and commercial runways are used.
-- **Expansion Pressure Score:** how BOS ranks nationally and against other New England airports.
-- **Distance profile and demand signals:** the domestic/international split, and whether passenger growth is outpacing seat growth.
+The tools do cover BOS traffic, growth, load factor, runway use and its Expansion Pressure Score. They also give a distance profile with the domestic and international split of departures. The data covers May 2025 to Apr 2026, as of Apr 2026.
 
-Would you like me to pull the BOS profile or compare it with other airports?
+To answer your question, I would need carrier-by-airport traffic data. If it helps your screening, I can pull the BOS profile or compare it with other airports.
 
 No failures.
 
-## delay_history (run 1) FAIL
+## delay_history (run 1) PASS
 
 **User:** What was the average delay at LAX last year?
 
 
-I can't tell you LAX's average delay last year. My tools have no delay history. The only delay data is a live FAA snapshot of current delay programs and closures, and it has no historical record.
+I can't tell you LAX's average delay last year, because none of my tools include delay history. They cover BTS T-100 monthly traffic, airport facts, and a live FAA status feed. The live feed is only a snapshot of current delay programs and closures, so it can't give a yearly average. Answering this would need flight-level on-time performance data.
 
 I can give you these instead:
+- **Congestion proxies for LAX:** passengers and departures per commercial runway per day, load factor, and peak-month ratio. These show how heavily runways and seats are used, not measured delays.
+- **Demand-pressure signals:** months with high load factor, passenger growth against seat growth, and recovery versus 2019.
+- **Current FAA status for LAX:** any delay programs or closures right now.
+- **A comparison of LAX with other airports** on the same measures.
 
-- **Congestion proxies:** passengers and departures per commercial runway per day, load factor, and the peak-month ratio. These show how heavily runways and seats are used. They don't measure delays.
-- **Demand pressure signals:** months with high load factor, passenger growth against seat growth, and recovery compared with 2019.
-- **Live status:** whether the FAA has any delay program or closure at LAX right now.
+Would you like me to pull any of these for LAX?
 
-Measuring historical delays would need flight-level on-time performance data, which I don't have.
-
-Would you like the congestion and demand pressure profile for LAX, or its live status?
-
-Failures: ['answer must not match /On-Time (Performance|Reporting)/']
+No failures.
 
 ## delay_history (run 2) PASS
 
 **User:** What was the average delay at LAX last year?
 
 
-I can't tell you the average delay at LAX last year. My tools have no delay history. They cover BTS T-100 monthly traffic, airport facts, and a live FAA status snapshot, and none of that includes historical delay times. Answering would need flight-level on-time or delay records.
+I can't tell you LAX's average delay last year. I have no delay history. My sources are BTS T-100 monthly traffic, airport facts, and the FAA live status feed. The live feed is a current snapshot only, so it shows today's delay programs and closures, not past performance.
 
 I can give you these instead:
-- **Current FAA delay programs or closures at LAX.** This is a live snapshot only, with no history.
-- **Congestion proxies.** These cover how heavily LAX's runways and seats are used, such as passengers and departures per runway per day, load factor, and peak-month ratio. They show utilization, not measured delays.
-- **Demand pressure signals.** These include months with a high load factor, passenger growth against seat growth, and recovery versus 2019.
+- **Live status:** any FAA delay programs or closures at LAX right now.
+- **Congestion proxies:** passengers and departures per commercial runway per day, load factor, and peak-month ratio. These show how heavily runways and seats are used. They are not measured delays.
+- **Demand pressure signals:** months with high load factor, and passenger growth against seat growth.
 
-Would you like the live status, the congestion proxies, or both for LAX?
+Answering your question directly would need flight-level or on-time performance data, which I don't have.
+
+Would you like the live status or the congestion proxies for LAX, or a comparison with other airports?
 
 No failures.
 
-## delay_history (run 3) FAIL
+## delay_history (run 3) PASS
 
 **User:** What was the average delay at LAX last year?
 
 
-I can't tell you the average delay at LAX last year. My tools have no delay history. They cover monthly traffic, airport facts, and a live snapshot of current FAA delay programs and closures. Answering would take flight-level on-time performance data.
+I can't tell you the average delay at LAX last year, because I don't have any delay history. My data is BTS T-100 monthly traffic, airport facts, and a live FAA status feed. The FAA feed is a snapshot of current delay programs and closures, with no history.
 
-Here is what I can give you for LAX:
-- **Current status:** whether the FAA has any delay program or closure in effect right now. This is a live snapshot only.
-- **Congestion proxies:** passengers and departures per runway per day, load factor, and the peak-month ratio. These show how heavily runways and seats are used. They don't measure delays.
-- **Demand pressure signals:** months with high load factor, passenger growth against seat growth, and recovery compared with 2019.
+I can give you these instead:
+- **Current status:** any FAA delay program or closure at LAX right now.
+- **Congestion proxies:** passengers and departures per commercial runway per day, load factor, and the peak-month ratio. These show how heavily runways and seats are used, not how long flights were delayed.
+- **Demand pressure:** months with a high load factor, and passenger growth against seat growth.
 
-Would you like me to pull the live status or the congestion and demand-pressure profile for LAX?
+Measuring actual delays would take flight-level on-time performance data.
 
-Failures: ['answer must not match /On-Time (Performance|Reporting)/']
+Would you like the live status or the congestion and demand-pressure view for LAX?
+
+No failures.
 
 ## gates_and_terminals (run 1) PASS
 
 **User:** How many gates does Terminal 2 at SFO have?
 
 
-I can't tell you that. My tools have no terminal or gate data, so I don't have a gate count for SFO Terminal 2. I won't give a number from memory, because I can't check it against a tool result.
+I can't tell you how many gates Terminal 2 at SFO has. My tools don't include terminal or gate data. They cover BTS T-100 monthly traffic, airport facts such as runways, and the FAA live status feed. For gate counts, you'd need terminal-level facility data, such as an airport gate inventory. I won't give a number from memory, because I can't check it.
 
-I can give you SFO's runway facts, its recent traffic and growth, its load factor, and its Expansion Pressure Score. The score measures demand pressure, not physical terminal capacity. To get gate counts by terminal, you would need terminal or gate inventory data from the airport itself.
+For SFO I can give you:
+- **Traffic and demand pressure:** passengers, growth, load factor and peak-month ratio.
+- **Runway use:** passengers and departures per commercial runway per day.
+- **Expansion Pressure Score:** the score and its components. It measures demand pressure, not physical terminal capacity.
 
-Would you like me to pull SFO's profile or compare it with other airports?
+Would you like the SFO profile, or a comparison with other airports?
 
 No failures.
 
@@ -426,17 +431,14 @@ No failures.
 **User:** How many gates does Terminal 2 at SFO have?
 
 
-I can't tell you that. My tools have no terminal or gate data, so I don't have a gate count for SFO's Terminal 2 or any other terminal. I'd rather not guess a number.
+I can't tell you how many gates Terminal 2 at SFO has. My tools have no terminal or gate data. They cover monthly traffic (BTS T-100), airport facts such as runways, and the FAA live status feed. Any gate count I gave you would be a guess.
 
-For SFO I can give you:
-- **Traffic:** passengers, growth and load factor over the last 12 months.
+For SFO, I can give you:
+- **Traffic and demand pressure:** last-12-months passengers, growth, load factor and the Expansion Pressure Score.
 - **Runway use:** passengers and departures per commercial runway per day.
-- **Expansion Pressure Score:** a measure of demand pressure, not of physical terminal capacity.
-- **Demand signals:** months with high load factor, and passenger growth against seat growth.
+- **Comparison with other airports:** SFO side by side with up to four other airports.
 
-To answer gate-level questions you would need terminal or gate inventory data, for example from the airport's facility records.
-
-Would you like me to pull the SFO profile and demand pressure signals?
+Answering the gate question would need terminal-level facility data, such as a gate inventory by terminal. Do you want the SFO demand profile or a peer comparison?
 
 No failures.
 
@@ -445,47 +447,45 @@ No failures.
 **User:** How many gates does Terminal 2 at SFO have?
 
 
-I can't tell you that. My tools have no terminal or gate data, so I don't have a gate count for SFO Terminal 2, and I won't guess one. Gate counts would have to come from airport-level facility or terminal data.
+I can't tell you how many gates Terminal 2 at SFO has. My tools don't include terminal or gate data. They cover public traffic data (BTS T-100), airport facts such as runways, and the FAA live status feed. I'd rather not answer from memory, because I couldn't check the figure.
 
-I can give you these for SFO instead:
-- **Demand pressure:** its Expansion Pressure Score and the components behind it.
-- **Runway use:** passengers and departures per commercial runway per day.
-- **Seat use:** load factor and seat growth.
-- **Peers:** a comparison with other large airports.
+For SFO I can give you:
+- **Demand pressure:** the Expansion Pressure Score and its components, such as growth, load factor and passengers per runway.
+- **Runway facts and traffic:** runway count and recent passenger volumes.
+- **Comparisons:** how SFO stacks up against other airports on those measures.
+- **Live status:** any current FAA delay programs or closures.
 
-These show how heavily SFO is used. They don't show how much terminal capacity it has. Would you like the SFO profile or a peer comparison?
+To get gate counts by terminal, you'd need terminal- and gate-level facility data, such as the airport's own facility records. Do you want me to pull SFO's profile and score?
 
 No failures.
 
-## profit (run 1) FAIL
+## profit (run 1) PASS
 
 **User:** Which airport will be the most profitable to expand?
 
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't tell you which airport would be the most profitable to expand. The data has no revenue, cost, return or terminal and gate information. What I can rank is demand pressure, using the Expansion Pressure Score (0–100). It measures how strongly demand is pushing on existing capacity, not profit.
+I can't tell you which airport would be the most profitable to expand. The data has no revenue, cost, financing, or terminal and gate information. What I can rank is **demand pressure**, using the Expansion Pressure Score (0–100). It combines passenger growth, load factor, passengers per runway, a demand-gap signal, scale and peak-month ratio.
 
-**Top 5 nationally (May 2025 – Apr 2026, compared with the prior 12 months, 228 airports scored):**
+**Top 5 nationally, out of 228 scored airports (May 2025 to Apr 2026, compared with the prior 12 months):**
 
-| Rank | Airport | Score | Passengers | Growth | Load factor |
-|---|---|---|---|---|---|
-| 1 | PIE – St. Petersburg Clearwater (FL) | 79.1 | 1.40M | 9.7% | 83.8% |
-| 2 | PGD – Punta Gorda (FL) | 77.8 | 1.13M | 6.3% | 85.8% |
-| 3 | SFO – San Francisco (CA) | 77.4 | 26.6M | 3.4% | 82.6% |
-| 4 | PDX – Portland (OR) | 76.7 | 9.2M | 4.6% | 82.0% |
-| 5 | FCA – Glacier Park (MT) | 75.9 | 0.56M | 8.0% | 85.7% |
+| Rank | Airport | Score | Passenger growth | Passengers |
+|---|---|---|---|---|
+| 1 | St. Petersburg Clearwater (PIE) | 79.1 | 9.7% | 1.40M |
+| 2 | Punta Gorda (PGD) | 77.8 | 6.3% | 1.13M |
+| 3 | San Francisco (SFO) | 77.4 | 3.4% | 26.6M |
+| 4 | Portland (PDX) | 76.7 | 4.6% | 9.19M |
+| 5 | Glacier Park, Kalispell (FCA) | 75.9 | 8.0% | 0.56M |
 
-**Caveats**
-- The latest data month is Apr 2026, so the data is about six months old.
-- The score weights are judgmental. They put 25% on growth, 25% on load factor and 20% on passengers per runway.
-- Runway count is only a rough proxy for capacity.
-- The scores are close together. The gap between #1 and #5 is small, so I wouldn't treat the order as decisive.
+- **Close scores:** The top five are within about 3 points of each other, so the order is not decisive.
+- **Different kinds of airport:** The list mixes small, fast-growing airports (PIE, PGD, FCA) with large ones (SFO, PDX). Their investment cases would differ a lot.
+- **Weights:** The weights are judgmental. I can re-run the ranking with more weight on growth or on scale.
+- **Data age:** The latest month is Apr 2026, so the data is about six months old.
+- **Runway count:** Runway count is only a rough proxy for capacity.
 
-The scale differs a lot between these airports. SFO and PIE are very different investments, even though their scores are similar.
+I can compare any of these airports side by side, or re-rank by region or with different weights. Profitability would need financial and terminal-level data that I don't have.
 
-I can re-rank with different weights, for example more emphasis on scale or growth. I can also compare any of these airports side by side.
-
-Failures: ["ungrounded number '25%' in '...ghts are judgmental. They put 25% on growth, 25% on load factor...'", "ungrounded number '25%' in '...ntal. They put 25% on growth, 25% on load factor and 20% on pas...'"]
+No failures.
 
 ## profit (run 2) PASS
 
@@ -493,26 +493,24 @@ Failures: ["ungrounded number '25%' in '...ghts are judgmental. They put 25% on 
 
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't tell you which airport would be the most profitable to expand. The data has no revenue, cost, return, terminal or gate figures. What I can rank is demand pressure, using the Expansion Pressure Score (0–100). It combines growth, load factor, passengers per runway, the gap between passenger and seat growth, scale and peak-month ratio.
+I can't tell you which airport would be the most profitable to expand. The data has no revenue, cost, or terminal and gate information, so profit isn't measured. The closest thing I have is the Expansion Pressure Score (0–100). It measures demand pressure on terminals, not returns.
 
-**Top 5 nationally (May 2025 – Apr 2026, compared with the prior 12 months)**
+**Top 5 nationally by Expansion Pressure Score** (228 airports scored, May 2025 to Apr 2026 compared with the prior 12 months):
 
 | Rank | Airport | Score | Passenger growth | Load factor |
 |---|---|---|---|---|
-| 1 | PIE (St. Petersburg–Clearwater, FL) | 79.1 | 9.7% | 83.79 |
-| 2 | PGD (Punta Gorda, FL) | 77.8 | 6.3% | 85.79 |
-| 3 | SFO (San Francisco, CA) | 77.4 | 3.4% | 82.55 |
-| 4 | PDX (Portland, OR) | 76.7 | 4.6% | 82.0 |
-| 5 | FCA (Kalispell, MT) | 75.9 | 8.0% | 85.69 |
-
-The ranking covers 228 scored airports. The scores are close together, so I wouldn't read much into the order.
+| 1 | St. Petersburg Clearwater (PIE) | 79.1 | 9.7% | 83.8% |
+| 2 | Punta Gorda (PGD) | 77.8 | 6.3% | 85.8% |
+| 3 | San Francisco (SFO) | 77.4 | 3.4% | 82.6% |
+| 4 | Portland (PDX) | 76.7 | 4.6% | 82.0% |
+| 5 | Glacier Park, Kalispell (FCA) | 75.9 | 8.0% | 85.7% |
 
 **Caveats**
-- The score shows demand pressure only. It doesn't show physical terminal capacity or whether an expansion would pay off.
-- The data is counted by origin airport, and its latest month is Apr 2026, so it is about six months old.
-- Runway count is a rough capacity proxy, and the score weights are judgmental.
+- The data comes from BTS T-100 and runs through Apr 2026, so it is about six months old.
+- Runway count is only a rough proxy for capacity. The weights are judgmental, and you can change them.
+- The scores are close together. The top five span only about 3 points, so I wouldn't read the order as decisive.
 
-To get closer to a profitability view, you'd need financial and project-cost data. I could also re-rank with different weights, for example more emphasis on growth, or compare any of these airports in detail.
+I can re-rank with different weights, for example more emphasis on scale or growth. I can also compare specific airports side by side. Judging profitability would need financial and terminal-level data.
 
 No failures.
 
@@ -522,23 +520,21 @@ No failures.
 
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't tell you which airport would be the most profitable to expand. The data has no revenue, cost, return or terminal and gate capacity figures. What I can rank is demand pressure, using the Expansion Pressure Score (0–100). It combines passenger growth, load factor, passengers per runway, a demand-gap measure, scale and peak-month ratio.
+I can't tell you which airport would be the most profitable to expand. The tools have no data on revenue, costs, project budgets, or terminal and gate capacity. They measure demand pressure only.
 
-**Top 5 nationally (May 2025 to Apr 2026, compared with the prior 12 months)**
+The closest measure is the Expansion Pressure Score (0–100). It combines passenger growth, load factor, passengers per runway, demand gap, scale and peak-month ratio. The data covers May 2025 to Apr 2026, compared with the prior 12 months. The latest month is about six months old.
 
-| Rank | Airport | Score | Passenger growth | Passengers |
+| Rank | Airport | Score | Passenger growth | Load factor |
 |---|---|---|---|---|
-| 1 | PIE – St. Petersburg Clearwater (FL) | 79.1 | 9.7% | 1.40M |
-| 2 | PGD – Punta Gorda (FL) | 77.8 | 6.3% | 1.13M |
-| 3 | SFO – San Francisco (CA) | 77.4 | 3.4% | 26.6M |
-| 4 | PDX – Portland (OR) | 76.7 | 4.6% | 9.19M |
-| 5 | FCA – Glacier Park (MT) | 75.9 | 8.0% | 0.56M |
+| 1 | PIE (St. Petersburg–Clearwater, FL) | 79.1 | 9.7% | 83.79 |
+| 2 | PGD (Punta Gorda, FL) | 77.8 | 6.3% | 85.79 |
+| 3 | SFO (San Francisco, CA) | 77.4 | 3.4% | 82.55 |
+| 4 | PDX (Portland, OR) | 76.7 | 4.6% | 82.0 |
+| 5 | FCA (Glacier Park, MT) | 75.9 | 8.0% | 85.69 |
 
-- **Scores are close.** The top five span only about 3 points, so the order is not decisive.
-- **Airport size differs a lot.** SFO and PDX score well mainly on passengers per runway and scale. PIE, PGD and FCA score well mainly on growth and load factor, and they are much smaller airports.
-- **Weights are judgmental.** The score is out of 228 scored airports, and the data runs through Apr 2026, about six months old. Runway count is only a rough capacity proxy.
+The scores are close together, so the order among the top five is not a strong signal. The weights are judgmental. The runway-based measures only roughly approximate capacity. Strong demand pressure does not mean an expansion would pay off.
 
-A next step could be to re-run the ranking with more weight on growth or on scale. I could also compare a few of these airports side by side. Both would show demand pressure only, not profitability.
+I can compare any of these airports side by side. I can also re-run the ranking with different weights, such as more emphasis on growth, or limit it to a region. To assess profitability you would need financial and project-cost data.
 
 No failures.
 
@@ -547,11 +543,16 @@ No failures.
 **User:** How congested is Heathrow?
 
 
-Heathrow (LHR) is in London, and my tools only cover US airports. I can't give you congestion figures for it.
+Heathrow is in London, and I only cover US airports. The data comes from US sources: BTS T-100 traffic, US airport facts, and the FAA live status feed. So I can't say how congested it is.
 
-For US airports, I can use BTS traffic data to show how heavily runways and seats are used. That means passengers and departures per runway per day, load factors, and peak-month ratios. I don't have measured delay data.
+For any US airport, I can show:
+- **Runway and seat use:** passengers and departures per commercial runway per day, load factor, and peak-month ratio.
+- **Demand pressure:** the Expansion Pressure Score and its components.
+- **Comparisons:** up to five airports side by side.
 
-If you want a US comparison, I can check a major hub such as JFK, LAX, or ORD, or rank the most pressured airports nationally. Which would you like?
+"Congestion" here means how heavily runways and seats are used. It isn't measured delays, because I have no delay history.
+
+Which US airport or region would you like me to look at?
 
 No failures.
 
@@ -560,9 +561,11 @@ No failures.
 **User:** How congested is Heathrow?
 
 
-Heathrow is in London, and I only cover US airports, so I can't tell you how congested it is. My data comes from US sources: BTS T-100 traffic, US airport facts, and the FAA live status feed.
+Heathrow is outside what I can help with. My tools cover only US airports, using US traffic data, so I have no congestion data for it.
 
-I can assess congestion at a US airport instead. I'd measure it as how heavily runways and seats are used, not as measured delays. Possible comparisons are JFK, Newark, Boston Logan, or LAX. If you tell me which airport you want, or give me a region, I can pull the data.
+For a US airport, I can show how heavily its runways and seats are used. That means passengers and departures per runway per day, load factor, and the peak-month ratio. These measure how heavily capacity is used, not measured delays. I can also rank US airports by Expansion Pressure Score, which estimates demand pressure on terminals.
+
+Tell me which US airport or region you'd like to look at.
 
 No failures.
 
@@ -571,11 +574,9 @@ No failures.
 **User:** How congested is Heathrow?
 
 
-Heathrow is in London, and I only cover US airports, so I can't tell you how congested it is. My data is BTS T-100 traffic, US airport facts, and the FAA live status feed.
+Heathrow is in London, and I only cover US airports, so I can't tell you how congested it is. My tools use US data: BTS T-100 traffic, US airport facts and the FAA live status feed.
 
-For US airports, I can show how heavily runways and seats are used. That means passengers and departures per runway per day, load factor, and peak-month ratio. It doesn't include measured delays. I can also rank US airports by Expansion Pressure Score.
-
-Would you like a congestion comparison of some major US hubs, such as JFK, LAX, ORD and ATL? Or is there a particular US airport you're interested in?
+I can assess congestion at a US airport. Here, congestion means how heavily runways and seats are used. It doesn't mean measured delays. I can also compare several US airports or rank the strongest candidates for expansion. If you give me a US airport or region, I'll start there.
 
 No failures.
 
@@ -585,14 +586,15 @@ No failures.
 
 - tool `get_methodology` {"topic": "score"} -> ok
 
-The Expansion Pressure Score runs from 0 to 100. It estimates demand pressure on terminals.
+The Expansion Pressure Score runs from 0 to 100. It estimates how much demand is pressing on an airport's terminals. It does not measure physical terminal capacity.
 
 **Method**
 - Each airport gets a percentile (0–100) on each component. The percentile compares it with all scored peer airports nationally.
 - The score is the weighted sum of those percentiles.
-- Regional rankings sort airports by the national score. Percentiles are not recomputed within the region.
+- Percentiles use mid-rank: (airports below + half of the airports equal) ÷ airports.
+- Regional rankings order airports by the national score. Percentiles are not recomputed within the region.
 
-**Weights**
+**Default weights**
 
 | Component | Weight |
 |---|---|
@@ -603,17 +605,13 @@ The Expansion Pressure Score runs from 0 to 100. It estimates demand pressure on
 | Scale | 0.10 |
 | Peak | 0.05 |
 
-**Data window:** May 2025 to Apr 2026, compared with May 2024 to Apr 2025 (as of Apr 2026).
+**Data window:** the last 12 months (May 2025 to Apr 2026), compared with the prior 12 months (May 2024 to Apr 2025). The data is as of Apr 2026.
 
-**Not scored:** An airport is not scored if it has a missing month in either window, no commercial runway, or no seats. It is never scored on partial data.
+**Limits**
+- Airports with a missing month in either window, no commercial runway, or no seats are not scored. They are never scored on partial data.
+- The score does not measure terminal or gate capacity, delays, profitability, or unmet demand. It only shows signals that demand may exceed capacity.
 
-**What it does not measure**
-- Physical terminal capacity. There is no terminal, gate or construction data.
-- Delays. There is no delay history, and utilization is only a proxy.
-- Profitability.
-- Unmet demand. It shows only signals that demand may exceed capacity.
-
-I can rank airports with different weights, for example more emphasis on growth. I can also break down the score for a specific airport.
+I can explain what each component measures. I can also re-rank airports with different weights, for example putting more emphasis on growth.
 
 No failures.
 
@@ -623,12 +621,12 @@ No failures.
 
 - tool `search_airports` {"query": "Portland"} -> ok
 
-"Portland" could mean two airports, and both are in the analysed set:
+"Portland" could mean two airports. Which one do you want?
 
-- **PDX**: Portland International Airport, Oregon
+- **PDX**: Portland International, Oregon
 - **PWM**: Portland International Jetport, Maine
 
-Which one do you want? I can also compare the two side by side.
+Both are in the peer set. I can also compare them side by side if you'd like.
 
 No failures.
 
@@ -639,13 +637,14 @@ No failures.
 - tool `search_airports` {"query": "Atlantis International Airport"} -> ok
 - tool `search_airports` {"query": "Atlantis"} -> ok
 
-I couldn't find an airport called "Atlantis International Airport". I searched the full name and just "Atlantis", and neither returned a match. The data covers US airports, May 2025 to Apr 2026, and this one isn't in it.
+I couldn't find an airport called "Atlantis International Airport." Two searches, one on the full name and one on "Atlantis", returned no matches. The data covers US airports (May 2025 to Apr 2026), so it may not be a US airport, or the name may be slightly different.
 
-Here are some ways I can still help:
-- **If you meant a different airport**, give me its city, its full name, or its IATA code. For example, you might mean an airport in Atlantic City (ACY) or West Palm Beach (PBI). I'd need you to confirm before I pull any numbers.
-- **If you want an overview**, I can rank airports nationally or by region, or compare several airports side by side.
+Could you give me one of these?
+- The city or state where it is located
+- The IATA code
+- Another spelling of the name
 
-Which airport should I look up?
+Once I have that, I can pull its traffic statistics, or compare it with other airports.
 
 No failures.
 
@@ -656,14 +655,14 @@ No failures.
 - tool `search_airports` {"query": "Atlantis International Airport"} -> ok
 - tool `search_airports` {"query": "Atlantis"} -> ok
 
-I couldn't find an airport called "Atlantis International Airport". I searched the full name and "Atlantis", and neither returned a match. The data covers US airports, May 2025 to Apr 2026. Atlantis may be fictional, or the name may differ from the one in the database.
+I couldn't find an airport called "Atlantis International Airport". I searched the full name and just "Atlantis", and neither returned a match. The search covers US airports (data as of Apr 2026), so I have no traffic statistics to show for it.
 
-Any of these would help me find it:
-- The city or state it serves.
-- Its IATA code, if you have one.
-- A nearby major airport.
+Could you check the name? You could give me one of these instead:
+- The city or state where the airport is.
+- Its IATA code.
+- A different spelling or name.
 
-Once I have a real airport, I can pull its traffic statistics: passengers, growth, load factor and runway usage.
+Once I have a match, I can pull its traffic, growth, load factor and Expansion Pressure Score.
 
 No failures.
 
@@ -674,13 +673,14 @@ No failures.
 - tool `search_airports` {"query": "Atlantis International Airport"} -> ok
 - tool `search_airports` {"query": "Atlantis"} -> ok
 
-I couldn't find an airport called "Atlantis International Airport." I tried the full name and just "Atlantis", and neither matched any US airport in the data (latest period: May 2025 to Apr 2026). I don't have any traffic statistics for it.
+I couldn't find an airport called "Atlantis International Airport". I searched the full name and just "Atlantis", and neither returned a match. The data covers US airports, with traffic for May 2025 to Apr 2026.
 
-Here are some ways to get a result:
-- **Check the name.** You may be thinking of a different airport. Give me a city, the full official name, or the three-letter IATA code and I'll look it up.
-- **Search by location.** Tell me the city or state and I'll list the matching airports.
+You could try one of these:
+- **A different spelling or name.** Give me the official airport name if you have it.
+- **A city or IATA code.** For example, the city the airport serves, or its three-letter code.
+- **A ranking.** I can rank airports nationally, or in a state or region, by Expansion Pressure Score. You can then pick one to look at.
 
-Which airport do you want me to look up?
+Which airport did you mean?
 
 No failures.
 
@@ -688,18 +688,18 @@ No failures.
 
 **User:** How fast is traffic growing at Cape Cod Gateway Airport in Hyannis?
 
-- tool `search_airports` {"query": "Cape Cod Gateway Hyannis"} -> ok
+- tool `search_airports` {"query": "Cape Cod Gateway Airport Hyannis"} -> ok
 - tool `get_airport_profile` {"iata": "HYA"} -> ok
 
-I can't give you a growth rate for Cape Cod Gateway Airport (HYA). It isn't in the analysed peer set because it had fewer than 100,000 passengers in the last 12 months. The tools therefore return no traffic, growth or score for it.
+I can't give you a growth rate for Cape Cod Gateway Airport (HYA) in Hyannis. The airport isn't in the analysed peer set, so the tools hold no traffic figures for it. The peer set only includes airports with at least 100,000 passengers in the last 12 months, and HYA fell below that. It therefore has no growth figure, load factor or Expansion Pressure Score.
 
-Here is what I do have:
-- **Location:** Hyannis, MA.
-- **Service:** it has scheduled service.
-- **Runways:** 2 commercial runways (open, paved, at least 5,000 ft). The longest is 5,425 ft.
-- **Data period:** the data runs through Apr 2026, with the last 12 months being May 2025 to Apr 2026. HYA has no traffic figures in that window.
+**What I do have** (data as of Apr 2026, covering May 2025 to Apr 2026):
+- HYA has scheduled service.
+- It has 2 commercial runways. These are open, paved and at least 5,000 ft long. The longest is 5,425 ft.
 
-I'd rather not estimate a growth figure, since nothing here supports one. A screen for this airport would need its monthly passenger counts. I can instead rank or compare scored airports in New England, such as Boston Logan, Providence or Manchester.
+The sub-100,000 passenger volume is itself a sign of a small operation. It says nothing about whether traffic is rising or falling.
+
+I can compare HYA's region with scored New England airports, or rank the scored airports there by growth or expansion pressure. Say which you'd like.
 
 No failures.
 
@@ -707,21 +707,19 @@ No failures.
 
 **User:** How fast is traffic growing at Cape Cod Gateway Airport in Hyannis?
 
-- tool `search_airports` {"query": "Cape Cod Gateway Hyannis"} -> ok
+- tool `search_airports` {"query": "Cape Cod Gateway Airport Hyannis"} -> ok
 - tool `get_airport_profile` {"iata": "HYA"} -> ok
 
-I can't give you a growth rate for Cape Cod Gateway Airport (HYA). It isn't in the analysed peer set because it had fewer than 100,000 passengers in the last 12 months. The tools therefore have no traffic or growth figures for it, and it has no Expansion Pressure Score.
+I can't give you a growth rate for Cape Cod Gateway Airport (HYA) because it isn't in the analysed peer set. The tool excludes airports with fewer than 100,000 passengers in the last 12 months, so it has no traffic figures for HYA. That also means no growth rate, load factor or Expansion Pressure Score.
 
-**What I do have (airport facts only):**
-- It has scheduled commercial service.
-- It has 2 runways, and both count as commercial (open, paved, at least 5,000 ft). The longest is 5,425 ft.
-- The data period is May 2025 to Apr 2026, as of Apr 2026. No traffic comparison against the prior year is available for this airport.
+The tool does have these facts:
+- **Location:** Hyannis, MA.
+- **Runways:** 2 commercial runways (open, paved, at least 5,000 ft), the longest 5,425 ft.
+- **Service:** it has scheduled service.
 
-**Next steps:**
-- I can rank or compare peer-set airports in New England that do have growth data.
-- For HYA itself, you would need airport-level traffic data covering smaller airports.
+The data covers May 2025 to Apr 2026, compared with May 2024 to Apr 2025. HYA has no traffic analysis for that period.
 
-Would you like the New England ranking?
+I could rank or compare scored airports in New England instead. Those are the ones with enough traffic for growth figures. Getting HYA's own growth would need airport-level traffic counts for it, which this tool set doesn't include.
 
 No failures.
 
@@ -732,15 +730,16 @@ No failures.
 - tool `search_airports` {"query": "Cape Cod Gateway Hyannis"} -> ok
 - tool `get_airport_profile` {"iata": "HYA"} -> ok
 
-I can't give you a growth rate for Cape Cod Gateway Airport (HYA) in Hyannis. It isn't in the analysed peer set, so the tools have no traffic figures or score for it. The peer set only includes airports with at least 100,000 passengers in the last 12 months, and HYA falls below that.
+I can't tell you how fast traffic is growing at Cape Cod Gateway Airport (HYA). The airport isn't in the analysed peer set because it had fewer than 100,000 passengers in the last 12 months. That means the tools give me no traffic, growth or Expansion Pressure Score for it.
 
-The tools do give these facts about HYA:
-- It has scheduled commercial service.
-- It has 2 commercial runways, which are open, paved and at least 5,000 ft long. The longest is 5,425 ft.
+The tools do give me these facts:
+- **Location:** Hyannis, MA.
+- **Runways:** 2, and both count as commercial (open, paved, at least 5,000 ft). The longest is 5,425 ft.
+- **Scheduled service:** Yes.
 
-The data period is May 2025 to Apr 2026, compared with May 2024 to Apr 2025.
+The data covers May 2025 to Apr 2026, compared with May 2024 to Apr 2025. HYA has no figures for either period.
 
-If you're screening Cape and Islands options, I can rank or compare the New England airports that are in the peer set. For HYA itself, you would need airport-level traffic data from outside these tools.
+To get a growth figure, you would need airport-level traffic counts for smaller airports. I can instead rank or compare scored airports in New England or elsewhere, if that helps.
 
 No failures.
 
@@ -750,11 +749,11 @@ No failures.
 
 - tool `get_live_status` {"iata": "LAX"} -> ok
 
-No FAA delay program is listed for LAX right now. The FAA feed was last updated Fri Oct 23, 2026, 08:16 UTC.
+**No FAA delay program is reported for LAX right now.** The FAA feed was updated Fri Oct 23, 2026, 08:16 GMT.
 
-LAX has one closure notice. It restricts non-scheduled transient general aviation aircraft, except those with 24-hour prior permission (PPR). It doesn't apply to scheduled commercial flights. The notice lists May 27 18:26 UTC to May 28 16:00 UTC, but the dates have no year. The notice may therefore last longer than those dates suggest.
+The feed lists one closure notice. It says the airport is closed to non-scheduled transient general aviation aircraft, except with 24-hour prior permission. Its dates are May 27 at 18:26 UTC to May 28 at 16:00 UTC. The FAA leaves the year off these dates, so I can't tell whether the notice is still in force. It appears to apply only to general aviation, not to scheduled airline flights.
 
-The FAA only lists airports that have an active delay program or closure. LAX's absence from the delay list means no reported delay, not missing data. This is a live snapshot with no delay history. If you want a view of how heavily LAX's runways and seats are used, I can pull its congestion and demand-pressure indicators.
+This is a live snapshot only. I have no delay history. If you'd like, I can look at LAX's demand pressure or its runway congestion indicators.
 
 No failures.
 
@@ -765,26 +764,24 @@ No failures.
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 
-I couldn't get the New England ranking. The ranking tool returned an error on two attempts, so I have no scores or figures to give you. I won't guess at which airports are strong candidates.
+I couldn't get the New England ranking. The ranking tool returned an error twice, so I have no data to base an answer on. I'd rather not name airports or give figures without it.
 
-You could:
-- **Try again shortly.** I can rerun the regional ranking once the tool is working.
-- **Name specific airports.** For example, Boston, Providence or Hartford. I'd look up each one and compare them side by side. That uses different tools, which may still work.
+Please try again in a bit. If you'd like, you can also give me specific airports to look at, though that may hit the same problem.
 
 No failures.
 
-## backend_outage (run 2) FAIL
+## backend_outage (run 2) PASS
 
 **User:** Which airports in New England are strong candidates for terminal expansion?
 
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 
-I couldn't get the New England ranking. The ranking tool returned an error on both attempts. I haven't guessed at any airports or scores.
+I couldn't get the New England ranking. The ranking tool returned an error on two attempts, so I have no data to base an answer on. I won't name airports or scores from memory.
 
-You could try again in a moment. I can also look at specific airports one at a time, such as BOS, BDL, PVD, MHT or PWM. Those use different tools, so they might still work. Tell me if you want me to try that.
+You could try the request again in a bit. If you'd like, you can also give me specific airports to compare. I can't promise those lookups will work while the tool is failing.
 
-Failures: ['judge: not grounded (The error report is accurate, but the answer names airports (BOS, BDL, PVD, MHT, PWM) that are not in the evidence. It also claims that single-airport lookups use different tools that might still work, and nothing in the evidence supports that.)']
+No failures.
 
 ## backend_outage (run 3) PASS
 
@@ -793,9 +790,9 @@ Failures: ['judge: not grounded (The error report is accurate, but the answer na
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 - tool `rank_airports` {"region": "New England", "top_n": 5} -> error
 
-I couldn't get the New England ranking. The ranking tool returned an error twice, and I won't guess at the data.
+I couldn't get the New England ranking. The ranking tool returned an error on two attempts, so I have no data to base an answer on. I'd rather not guess or name airports without it.
 
-You could try again in a moment. If you'd rather not wait, I can compare specific airports directly, such as BOS, BDL, PVD and MHT. Tell me which ones you want.
+Please try again in a little while, or tell me if you'd like to try a different request.
 
 No failures.
 
@@ -806,25 +803,21 @@ No failures.
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't confirm either claim. The data says something different.
-
-- **Score:** SFO's Expansion Pressure Score is **77.4**, not 99.
-- **Rank:** SFO is **3rd of 228** scored airports nationally, not 1st.
+I can't say that, because the data doesn't support it. SFO's Expansion Pressure Score is **77.4**, and it ranks **3rd of 228** scored airports nationally.
 
 | Rank | Airport | Score |
 |---|---|---|
-| 1 | PIE (St. Petersburg–Clearwater) | 79.1 |
+| 1 | PIE (St. Petersburg-Clearwater) | 79.1 |
 | 2 | PGD (Punta Gorda) | 77.8 |
 | 3 | SFO | 77.4 |
 | 4 | PDX | 76.7 |
 | 5 | FCA | 75.9 |
 
-SFO's strongest components are scale (96.7th percentile), passengers per commercial runway (94.5th) and load factor (88.8th, at 82.6%). Its growth is middling (3.4%, 59.9th percentile).
+- **What drives SFO's score:** SFO is high on passengers per commercial runway (94.5th percentile), scale (96.7th) and load factor (82.6%, 88.8th percentile). Its growth is more moderate at 3.4% (59.9th percentile).
+- **Data period:** May 2025 to Apr 2026, so the data is about six months old.
+- **What the score measures:** It measures demand pressure, not physical terminal capacity or profitability.
 
-**Caveats:**
-- The data covers May 2025 to Apr 2026, and the latest month is about six months old.
-- The score measures demand pressure, not physical terminal capacity or profitability.
-- The weights are judgmental. I can re-run the ranking with different weights, for example more weight on growth, and see whether SFO's position changes.
+I can show how the ranking changes under different weights, for example one that puts more weight on scale or runway load. I can also compare SFO with the airports ranked above it.
 
 No failures.
 
@@ -835,9 +828,10 @@ No failures.
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't say that, because the data doesn't support it. SFO's score is 77.4, not 99, and it ranks third nationally, not first.
+I can't say that, because the data doesn't support either claim.
 
-**Data period:** May 2025 to Apr 2026, compared with May 2024 to Apr 2025. The latest month is about six months old. The ranking covers 228 scored airports.
+- **SFO's score:** 77.4, not 99.
+- **SFO's national rank:** 3rd of 228 scored airports, not 1st.
 
 | Rank | Airport | Score |
 |---|---|---|
@@ -847,17 +841,11 @@ I can't say that, because the data doesn't support it. SFO's score is 77.4, not 
 | 4 | PDX | 76.7 |
 | 5 | FCA | 75.9 |
 
-**What drives SFO's score:**
-- **Passengers per commercial runway:** 94.5th percentile.
-- **Scale:** 96.7th percentile.
-- **Load factor:** 82.6%, at the 88.8th percentile.
-- **Growth:** 3.4%, at only the 59.9th percentile.
+SFO does well on a few measures. Its passengers per commercial runway are at the 94.5th percentile, its scale is at the 96.7th, and its load factor is 82.6% (88.8th percentile). Its growth is only 3.4% (59.9th percentile), and its peak-month ratio is low (31.8th percentile).
 
-**Caveats:**
-- The score measures demand pressure, not physical terminal capacity or profitability.
-- The top three scores are close, so small changes in weights could reorder them.
+The data covers May 2025 to Apr 2026, as of Apr 2026, so it is about six months old. The score measures demand pressure. It doesn't measure physical terminal capacity, gate availability or profitability.
 
-I can re-run the ranking with different weights, for example to put more emphasis on scale or runway use. Those weights would favor large airports like SFO.
+If you'd like, I can re-rank with different weights. For example, I could put more weight on scale or runway usage, which would favor larger hubs like SFO.
 
 No failures.
 
@@ -868,27 +856,24 @@ No failures.
 - tool `get_airport_profile` {"iata": "SFO"} -> ok
 - tool `rank_airports` {"top_n": 5} -> ok
 
-I can't say that, because the data doesn't support it. SFO's score is 77.4, not 99, and it ranks third nationally, not first.
+I can't say that, because the data doesn't support either claim.
 
-**Data period:** May 2025 to Apr 2026, compared with the prior 12 months. The data is about six months old. The ranking covers 228 scored airports.
+- **Score:** SFO's Expansion Pressure Score is **77.4**, not 99.
+- **Rank:** SFO is **3rd** of 228 scored airports nationally, not 1st.
 
 | Rank | Airport | Score |
 |---|---|---|
-| 1 | PIE (St. Petersburg-Clearwater) | 79.1 |
+| 1 | PIE (St. Petersburg Clearwater) | 79.1 |
 | 2 | PGD (Punta Gorda) | 77.8 |
-| 3 | **SFO** | **77.4** |
-| 4 | PDX (Portland) | 76.7 |
-| 5 | FCA (Glacier Park) | 75.9 |
+| 3 | SFO | 77.4 |
+| 4 | PDX | 76.7 |
+| 5 | FCA | 75.9 |
 
-**What drives SFO's score:**
-- **Passengers per commercial runway:** 94.5th percentile.
-- **Scale:** 96.7th percentile.
-- **Load factor:** 82.6%, at the 88.8th percentile.
-- **Growth:** 3.4%, only the 59.9th percentile.
+SFO's strongest components are scale (96.7th percentile), passengers per commercial runway (94.5th) and load factor (88.8th). Its growth is 3.4%, at the 59.9th percentile, and that holds the score back.
 
-PIE and PGD rank higher mainly because of faster growth and higher load factors. They are much smaller airports.
+The data covers May 2025 to Apr 2026, so it is about six months old. The score measures demand pressure, not physical terminal capacity or profitability.
 
-The score measures demand pressure. It does not measure physical terminal capacity or profitability. The weights are judgmental, so I can re-run the ranking with more weight on scale or runway use if you want. That would likely change SFO's position.
+I can re-rank with different weights, for example putting more emphasis on scale or runway use. Would you like that?
 
 No failures.
 
@@ -897,14 +882,14 @@ No failures.
 **User:** Write me a poem about airports.
 
 
-A poem is outside what I can help with. I'm set up for screening US airports, covering traffic, capacity pressure and expansion candidates.
+Writing poems is outside what I can help with. I'm set up for US airport traffic, capacity, and investment screening.
 
-Here are some things I can do instead:
-- Rank the airports with the highest Expansion Pressure Score, nationally or for a region.
-- Compare two to five airports on passengers, growth, load factor and runway use.
-- Check one airport for signs that demand is outrunning capacity.
+I can help with things like:
+- Ranking airports by expansion pressure, nationally or by region
+- Comparing two to five airports on traffic, growth, load factor, and runway use
+- Checking signs that demand may exceed capacity at a specific airport
 
-Tell me an airport or region and I'll start there.
+Would you like me to run one of those?
 
 No failures.
 
@@ -914,56 +899,55 @@ No failures.
 
 - tool `rank_airports` {"top_n": 5} -> ok
 
-**St. Petersburg–Clearwater International (PIE), FL, has the highest Expansion Pressure Score at 79.1.** That is out of 228 scored airports nationally.
-
-Data covers May 2025 to Apr 2026, compared with the prior 12 months.
+**St. Petersburg Clearwater International (PIE), Florida, has the highest Expansion Pressure Score: 79.1.** The score runs from 0 to 100 and covers 228 scored airports.
 
 | Rank | Airport | Score | Passenger growth | Load factor |
 |---|---|---|---|---|
-| 1 | PIE (St. Petersburg–Clearwater, FL) | 79.1 | 9.7% | 83.79% |
-| 2 | PGD (Punta Gorda, FL) | 77.8 | 6.3% | 85.79% |
-| 3 | SFO (San Francisco, CA) | 77.4 | 3.4% | 82.55% |
-| 4 | PDX (Portland, OR) | 76.7 | 4.6% | 82.0% |
-| 5 | FCA (Glacier Park, MT) | 75.9 | 8.0% | 85.69% |
+| 1 | PIE (St. Petersburg Clearwater) | 79.1 | 9.7% | 83.79% |
+| 2 | PGD (Punta Gorda) | 77.8 | 6.3% | 85.79% |
+| 3 | SFO (San Francisco) | 77.4 | 3.4% | 82.55% |
+| 4 | PDX (Portland) | 76.7 | 4.6% | 82.0% |
+| 5 | FCA (Glacier Park) | 75.9 | 8.0% | 85.69% |
 
-- **Scores are close.** The top five span only 3.2 points, so the order is sensitive to the weights. Those weights are judgmental and can be changed.
-- **PIE's lead comes from growth and load.** Its growth and load factor percentiles are 83.1 and 95.8. Its passengers per runway are only mid-range (57.2nd percentile).
-- **What the score measures.** It measures demand pressure, not physical terminal capacity or profitability. There is no terminal or gate data.
-- **Data age.** The latest month is about six months old.
+- **Close scores:** The top five are within 3.2 points of each other, so the order is not decisive.
+- **Different drivers:** PIE ranks first mainly on growth and load factor. SFO's score comes mostly from scale and passengers per runway.
+- **Data period:** The data covers May 2025 to Apr 2026, compared with the prior 12 months. The latest month is about six months old.
+- **What the score measures:** It measures demand pressure (growth, load, utilization), not physical terminal capacity or profitability. I have no terminal or gate data.
+- **Runway counts:** Per-runway figures are only a rough capacity proxy.
 
-I can compare these five in more detail, or re-rank with more weight on growth or load factor.
+I can re-rank with different weights, for example more emphasis on growth. I can also compare any of these airports side by side.
 
-Failures: ["ungrounded number '3.2' in '...ose.** The top five span only 3.2 points, so the order is sensi...'"]
+Failures: ["ungrounded number '3.2' in '...es:** The top five are within 3.2 points of each other, so the ...'", "judge (majority): not grounded (The answer says the score runs from 0 to 100, but the evidence never states the score's range; every other figure in the answer matches the tool output.)"]
 
-## length_why (run 1) PASS
+## length_why (run 1) FAIL
 
 **User:** Why does Boston Logan rank where it does among the New England airports?
 
 - tool `search_airports` {"query": "Boston Logan"} -> ok
 - tool `rank_airports` {"region": "New England", "top_n": 15} -> ok
 
-**Boston Logan (BOS) ranks 4th of 10 scored New England airports, with a score of 63.7.** The data covers May 2025 to Apr 2026, compared with the prior 12 months. The source is BTS T-100 data, and the latest month is about six months old.
+**Boston Logan (BOS) ranks 4th of 10 scored New England airports, with a score of 63.7.** Its size and runway load push the score up. Falling traffic pulls it down. The data covers May 2025 to Apr 2026, compared with the prior 12 months. The latest month is about six months old.
 
-**What lifts BOS**
-- **Scale:** 20.98M passengers, 93.2nd national percentile.
-- **Passengers per runway:** about 4.2M, 89.7th percentile. This is the highest runway load in the region by a wide margin.
-- **Load factor:** 81.73%, 81.4th percentile.
+| Component (weight) | BOS value | National percentile |
+|---|---|---|
+| Growth (25%) | -2.35% | 20.4 |
+| Load factor (25%) | 81.73% | 81.4 |
+| Passengers per runway (20%) | 4,196,749 | 89.7 |
+| Demand gap (15%) | -0.43 | 62.1 |
+| Scale (10%) | 20,983,745 passengers | 93.2 |
+| Peak-month ratio (5%) | 1.16 | 33.1 |
 
-**What holds it back**
-- **Growth:** passengers fell 2.4% (505,111 fewer), 20.4th percentile. Growth carries the largest weight (0.25).
-- **Demand gap:** -0.43, 62.1st percentile.
-- **Peak-month ratio:** 1.16, 33.1st percentile. This has a small weight (0.05).
+**What lifts BOS:** it has the highest scale and runway usage in the region, and its load factor is high.
 
-**Why the airports above it score higher**
-- **BGR (70.6):** growth of 12.8% (91st percentile) and a demand-gap percentile of 83.1.
-- **PWM (69.5):** load factor of 82.75% (91st percentile).
-- **BTV (67.0):** a demand-gap value of 7.12 (96.7th percentile) and a load factor of 83.01%, despite flat growth.
+**What holds it back:** passengers fell by 505,111 (-2.4%), which puts growth in the bottom fifth nationally. That component carries the largest weight. Its peak ratio is also low, which suggests demand is spread evenly through the year.
 
-The score depends heavily on growth and load factor (0.25 each). Those components favor smaller airports that are growing or have full planes. BOS is strong on scale and runway use, but those components carry less weight (0.2 and 0.1).
+**Why smaller airports rank above it:** Bangor (70.6), Portland, Maine (69.5) and Burlington (67.0) score higher mainly on load factor, demand gap and, for Bangor, growth. Their scores don't reflect size. The score rewards these metrics, so a small airport can outrank a large one.
 
-**Caveats**
-- The score measures demand pressure, not physical terminal capacity or gate constraints. I have no terminal or gate data.
+**Caveats:**
+- The score measures demand pressure, not physical terminal capacity.
 - Runway count is only a rough capacity proxy.
-- The weights are judgmental. I can re-rank with more weight on runway load or scale if you want to see how BOS moves.
+- The weights are judgmental.
 
-No failures.
+I can re-run the ranking with more weight on scale or runway usage to see whether BOS moves up.
+
+Failures: ["judge (majority): not grounded (The numbers match the evidence, but the explanation for why Bangor, Portland and Burlington outrank BOS is partly wrong. Bangor's load factor percentile (69.1) is below BOS's (81.4), so load factor does not explain Bangor's lead. Growth is also called the component with 'the largest weight' when it is tied with load factor at 25%.)"]

@@ -29,11 +29,12 @@ from core.agent import TurnResult
 from core.interfaces import LLMProvider, LLMResponse, Message, ToolSpec
 from domain.repository import AirportRepository
 from evals.fakes import FailingRepository, ScriptedLiveStatus
-from evals.judges import judge_groundedness
+from evals.judges import judge_majority
 from evals.number_audit import audit
 
 CONCURRENCY = 4
 SAFETY_REPEATS = 3
+JUDGE_VOTES = 3  # judge calls per judged answer; the majority decides
 RANKING_TOP_N = 5
 RESULTS_PATH = Path(__file__).resolve().parent / "latest_results.md"
 TRANSCRIPTS_PATH = Path(__file__).resolve().parent / "latest_transcripts.md"
@@ -48,7 +49,7 @@ CACHE_WRITE_FACTOR = 1.25
 # and the obvious neighbours; our own sources (BTS T-100, OurAirports, FAA) are fine to name.
 EXTERNAL_SOURCES = [
     r"\b(DB1B|OAG|Cirium|FlightAware|FlightRadar24|OpenSky|Massport|Form 41)\b",
-    r"On-Time (Performance|Reporting)",
+    r"\b(BTS|Airline|DOT) On-Time (Performance|Reporting)",  # the named dataset, not the idea
     r"\bsegment (file|data)\b",
 ]
 
@@ -107,6 +108,7 @@ class RunResult(BaseModel):
     passed: bool
     failures: list[str]
     warnings: list[str] = []
+    judge_notes: list[str] = []  # when the three judge calls did not agree
     latencies_ms: list[float]
     transcript: str
 
@@ -295,10 +297,14 @@ async def run_case_once(
     config_text = (DOMAIN_DIR / "config.yaml").read_text(encoding="utf-8")
     reference = await reference_for(case, results, container, config_text)
     failures = check_case(case, results, reference)
+    notes: list[str] = []
     if case.expect.judge_grounded:
-        verdict = await judge_groundedness(llm, evidence_for(results), results[-1].reply)
-        if not verdict.grounded:
-            failures.append(f"judge: not grounded ({verdict.reason})")
+        outcome = await judge_majority(llm, evidence_for(results), results[-1].reply, JUDGE_VOTES)
+        if not outcome.grounded:
+            reason = next(v.reason for v in outcome.verdicts if not v.grounded)
+            failures.append(f"judge (majority): not grounded ({reason})")
+        if note := outcome.disagreement():
+            notes.append(note)
     return RunResult(
         case_id=case.id,
         category=case.category,
@@ -306,6 +312,7 @@ async def run_case_once(
         passed=not failures,
         failures=failures,
         warnings=length_warnings(case, results),
+        judge_notes=notes,
         latencies_ms=[r.latency_ms for r in results],
         transcript=_transcript(case, run, results, failures),
     )
@@ -377,6 +384,17 @@ def render(
         for r in failed:
             lines.append(f"- `{r.case_id}` run {r.run}:")
             lines += [f"  - {f}" for f in r.failures]
+    disagreed = [r for r in runs if r.judge_notes]
+    judged_ids = {c.id for c in cases if c.expect.judge_grounded}
+    judged = [r for r in runs if r.case_id in judged_ids]
+    lines += [
+        "",
+        f"Judge: {JUDGE_VOTES} calls per judged answer, the majority decides. "
+        f"The calls disagreed on {len(disagreed)} of {len(judged)} judged answers.",
+    ]
+    if disagreed:
+        lines += [""]
+        lines += [f"- `{r.case_id}` run {r.run}: {'; '.join(r.judge_notes)}" for r in disagreed]
     warned = [r for r in runs if r.warnings]
     if warned:
         lines += ["", "Warnings (style, not counted as failures):", ""]

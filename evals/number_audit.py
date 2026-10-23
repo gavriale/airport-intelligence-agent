@@ -5,8 +5,12 @@ A number passes if it
   36,590,656; "96%" matches 95.6),
 - matches a number the user wrote, a number the model passed to a tool, or a number defined in
   `domain/config.yaml` (default weights, thresholds), or
-- is not a data number: a year, "12 months", a rank, a list or table index, the 0 to 100 range,
-  or part of a name ("Lower 48", "T-100", "Boeing 737").
+- is not a data number: a year, "12 months", a rank, a list or table index, the 0 to 100 range
+  ("0 to 100", "out of 100"), or part of a name ("Lower 48", "T-100", "Boeing 737").
+
+Rounding is read generously in two ways that are real formats, not guesses: a whole number with
+thousands separators that ends in zeros ("442,000") is read as rounded to the thousand at most,
+and a percentage matches the same value as a fraction ("25%" for 0.25).
 
 Anything else is reported. The audit cannot tell a number that is wrong from a number that
 happens to equal another value in the tool results, so it is a strong check, not a proof.
@@ -27,6 +31,7 @@ SCALES = {"k": 1e3, "thousand": 1e3, "m": 1e6, "million": 1e6, "b": 1e9, "bn": 1
 NAMES = re.compile(r"\bLower 48\b|\b[A-Za-z]-\d+\b|\b(?:Boeing|Airbus)\s+[A-Z]?\d{3,4}\b")
 YEARS = range(1990, 2101)
 MAX_RANK = 20
+MAX_ROUNDED_ZEROS = 3  # "442,000" may be a rounding to the thousand; "100,000" is not read looser
 EPSILON = 1e-9
 
 
@@ -38,6 +43,18 @@ class Found:
     start: int
     end: int
     plain_integer: bool  # digits only: no sign, comma, decimals or scale word
+    percent: bool  # written with % or "percent"
+
+
+def _tolerance(grouped: str, digits: str, scale: float) -> float:
+    """Half a unit of the last digit written. A comma-grouped whole number that ends in zeros
+    ("442,000") is read as rounded to its last nonzero digit, but only up to the thousands."""
+    if "." in digits:
+        return 0.5 * 10 ** -len(digits.split(".")[1]) * scale
+    if "," in grouped:
+        zeros = len(digits) - len(digits.rstrip("0"))
+        return 0.5 * 10 ** min(zeros, MAX_ROUNDED_ZEROS) * scale
+    return 0.5 * scale
 
 
 def extract(text: str) -> list[Found]:
@@ -46,23 +63,29 @@ def extract(text: str) -> list[Found]:
     found = []
     for m in NUMBER.finditer(text):
         digits = m.group(1).replace(",", "")
-        decimals = len(digits.split(".")[1]) if "." in digits else 0
-        scale = SCALES.get((m.group(2) or "").lower(), 1.0)
+        suffix = (m.group(2) or "").lower()
+        scale = SCALES.get(suffix, 1.0)
         found.append(
             Found(
                 raw=m.group(0),
                 value=abs(float(digits)) * scale,
-                tolerance=0.5 * 10**-decimals * scale,
+                tolerance=_tolerance(m.group(1), digits, scale),
                 start=m.start(),
                 end=m.end(),
                 plain_integer=m.group(0).isdigit(),
+                percent=suffix in ("%", "percent"),
             )
         )
     return found
 
 
 def _matches(f: Found, values: Iterable[float]) -> bool:
-    return any(abs(f.value - v) <= f.tolerance + EPSILON for v in values)
+    """Within rounding of a known value. A percentage also matches a 0 to 1 value times 100
+    (the answer says 25% where the tool says 0.25)."""
+    values = list(values)
+    if any(abs(f.value - v) <= f.tolerance + EPSILON for v in values):
+        return True
+    return f.percent and any(abs(f.value / 100 - v) <= f.tolerance / 100 + EPSILON for v in values)
 
 
 def _is_structural(text: str, f: Found) -> bool:
@@ -85,6 +108,10 @@ def _is_structural(text: str, f: Found) -> bool:
     if small and re.match(r"(st|nd|rd|th)\b", after) and "percentile" not in after:  # 2nd, 5th
         return True
     if small and re.search(r"(top|rank|ranked|#|no\.)\s*$", before):  # top 5, rank 1
+        return True
+    if (
+        f.plain_integer and f.value == 100 and re.search(r"(out of|/)\s*$", before)
+    ):  # 77.4 out of 100
         return True
     if f.plain_integer and f.value in (0, 100):  # the score scale "0 to 100"
         return bool(re.search(r"\b0\s*(?:–|-|to)\s*100\b", text))

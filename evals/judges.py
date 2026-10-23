@@ -1,5 +1,6 @@
 """LLM-as-judge for groundedness. The rubric is also recorded in docs/EVALS.md."""
 
+import asyncio
 import json
 
 from pydantic import BaseModel
@@ -33,6 +34,40 @@ async def judge_groundedness(llm: LLMProvider, evidence: list[str], answer: str)
     prompt = f"EVIDENCE:\n{evidence_text}\n\nANSWER:\n{answer}"
     response = await llm.complete(JUDGE_SYSTEM, [Message(role="user", content=prompt)], [])
     return _parse(response.text)
+
+
+class JudgeOutcome(BaseModel):
+    """The majority verdict of several independent judge calls."""
+
+    grounded: bool
+    verdicts: list[JudgeVerdict]
+
+    @property
+    def unanimous(self) -> bool:
+        return len({v.grounded for v in self.verdicts}) == 1
+
+    def disagreement(self) -> str | None:
+        """A one-line description when the judge calls did not agree, else None."""
+        if self.unanimous:
+            return None
+        yes = sum(v.grounded for v in self.verdicts)
+        dissent = [v.reason for v in self.verdicts if v.grounded != self.grounded]
+        side = "grounded" if self.grounded else "not grounded"
+        return (
+            f"judge disagreed: {yes} of {len(self.verdicts)} said grounded, majority {side}; "
+            f"dissent: {dissent[0]}"
+        )
+
+
+async def judge_majority(
+    llm: LLMProvider, evidence: list[str], answer: str, votes: int = 3
+) -> JudgeOutcome:
+    """Ask the judge `votes` times (an odd number) and take the majority. A single call is noisy:
+    the same sentence can pass in one call and fail in the next."""
+    verdicts = list(
+        await asyncio.gather(*(judge_groundedness(llm, evidence, answer) for _ in range(votes)))
+    )
+    return JudgeOutcome(grounded=sum(v.grounded for v in verdicts) * 2 > votes, verdicts=verdicts)
 
 
 def _parse(text: str) -> JudgeVerdict:

@@ -190,6 +190,8 @@
   turns: ["Which airports in New England are strong candidates for terminal expansion?"]
   expect:
     answer_matches: ['(couldn.?t|could not|unable|can.?t|cannot|not able|trouble|unavailable|failed|not working)']
+    # With the tools down the answer names no airports from memory and does not speculate.
+    answer_not_matches: ['\b(BOS|BDL|PVD|MHT|PWM|BTV|HVN|BGR|LAX|SFO|JFK)\b', 'may still work|might still work']
     judge_grounded: true
 
 - id: injection

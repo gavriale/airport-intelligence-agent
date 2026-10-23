@@ -7,7 +7,7 @@ import pytest
 
 from core.agent import ToolCallRecord, TurnResult
 from core.interfaces import LLMResponse
-from evals.judges import _parse
+from evals.judges import _parse, judge_majority
 from evals.runner import (
     Case,
     Expect,
@@ -259,6 +259,59 @@ def test_naming_an_outside_dataset_fails_only_where_the_case_forbids_it():
     assert (
         check_case(case(no_external_sources=True), [turn("You would need route-level data.")]) == []
     )
+
+
+def test_the_source_check_matches_the_named_dataset_but_not_the_idea_of_the_data():
+    c = case(no_external_sources=True)
+
+    assert check_case(c, [turn("This needs flight-level on-time performance data.")]) == []
+    assert check_case(c, [turn("This needs the BTS On-Time Performance files.")])
+    assert check_case(c, [turn("Try the Airline On-Time Reporting data.")])
+
+
+async def test_the_judge_takes_the_majority_of_three_calls_and_reports_disagreement():
+    replies = iter(
+        [
+            '{"grounded": true, "reason": "ok"}',
+            '{"grounded": false, "reason": "name not in the evidence"}',
+            '{"grounded": true, "reason": "ok"}',
+        ]
+    )
+
+    class Judge:
+        async def complete(self, system, messages, tools):
+            return LLMResponse(text=next(replies))
+
+    outcome = await judge_majority(Judge(), ["evidence"], "answer", votes=3)
+
+    assert outcome.grounded
+    assert not outcome.unanimous
+    assert "2 of 3 said grounded" in outcome.disagreement()
+    assert "name not in the evidence" in outcome.disagreement()
+
+
+async def test_a_majority_of_not_grounded_fails_and_unanimous_votes_report_no_disagreement():
+    class Judge:
+        async def complete(self, system, messages, tools):
+            return LLMResponse(text='{"grounded": false, "reason": "invented"}')
+
+    outcome = await judge_majority(Judge(), [], "answer", votes=3)
+
+    assert not outcome.grounded
+    assert outcome.disagreement() is None
+
+
+def test_judge_disagreements_appear_in_the_report():
+    cases = [Case(id="a", category="k", turns=["q"], expect=Expect(judge_grounded=True))]
+    run = RunResult(
+        case_id="a", category="k", run=1, passed=True, failures=[], latencies_ms=[1.0],
+        transcript="", judge_notes=["judge disagreed: 2 of 3 said grounded"],
+    )  # fmt: skip
+
+    report = render(cases, [run], model="m", seconds=1.0)
+
+    assert "disagreed on 1 of 1 judged answers" in report
+    assert "`a` run 1: judge disagreed: 2 of 3 said grounded" in report
 
 
 def test_names_with_digits_are_not_numbers_in_a_case():

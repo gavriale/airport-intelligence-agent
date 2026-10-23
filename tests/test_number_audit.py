@@ -109,6 +109,40 @@ def test_a_standalone_number_next_to_such_a_name_is_still_checked():
     assert failures("100 routes in BTS T-100 data", "")  # the bare 100 is still ungrounded
 
 
+def test_a_grouped_number_ending_in_zeros_is_read_as_rounded_to_the_thousand_at_most():
+    tool = '{"passengers": 441517}'
+
+    assert failures("about 442,000 passengers", tool) == []
+    assert failures("about 450,000 passengers", tool)  # too far to be a rounding
+    assert failures("about 436,000 passengers", tool)
+    assert failures("about 100,000 passengers", '{"x": 120000}')  # never read as rounding to 10^5
+    assert failures("about 1,500 flights", '{"x": 1480}') == []  # to the hundred
+    assert failures("about 1,500 flights", '{"x": 1400}')
+
+
+def test_a_plain_number_ending_in_zeros_gets_no_rounding_allowance():
+    assert failures("442000 passengers", '{"passengers": 441517}')
+
+
+@pytest.mark.parametrize("answer", ["a score of 77.4 out of 100", "scored 77.4/100"])
+def test_out_of_100_is_the_score_scale(answer):
+    assert failures(answer, '{"score": 77.4}') == []
+
+
+def test_a_bare_100_is_still_ungrounded():
+    assert failures("it scored 100", '{"score": 77.4}')
+
+
+@pytest.mark.parametrize("answer", ["they put 25% on growth", "they put 25 percent on growth"])
+def test_a_percentage_matches_the_same_value_as_a_fraction(answer):
+    assert failures(answer, '{"growth": 0.25}') == []
+
+
+def test_the_fraction_rule_applies_to_percentages_only():
+    assert failures("they put 26% on growth", '{"growth": 0.25}')
+    assert failures("they put 25 on growth", '{"growth": 0.25}')  # no % sign: not converted
+
+
 def test_extraction_reads_scale_words_and_tolerance():
     [m] = extract("36.6M passengers")
 

@@ -6,7 +6,7 @@ The agent loop is written by hand (no agent framework). The model chooses tools 
 
 ## Status
 
-Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** The evals are built and have been run twice; the final docs are still to do.
+Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** The evals are built and have been run three times; the final docs are still to do.
 
 | Stage | State |
 |---|---|
@@ -14,7 +14,7 @@ Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the da
 | 2. Data layer: schema, ingest, committed snapshot, repository | done |
 | 3. Scoring and airport tools | done |
 | 4. Prompt, API and chat UI polish | prompt and `GET /ranking` done; the chat page works but is plain |
-| 5. Evals | built and run twice (run 1: 12 of 18 pass; run 2 after fixes to the checks and prompt: 12 of 20 pass, all failures diagnosed): see [docs/EVALS.md](docs/EVALS.md) |
+| 5. Evals | built and run three times (67%, 60%, 85%; the last run passes 17 of 20 cases and the 3 failures are documented): see [docs/EVALS.md](docs/EVALS.md) |
 | 6. Docs and presentation | not started |
 
 Data sources and their limits were checked first: see [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md).

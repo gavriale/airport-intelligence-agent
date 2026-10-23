@@ -54,6 +54,23 @@ async def test_passengers_added_is_shown_beside_growth_but_is_not_in_the_score(a
     assert lax["passengers_added"] < 0 < sna["passengers_added"]
 
 
+async def test_results_name_the_score_so_an_answer_can_use_the_name(analytics):
+    ranking = await analytics.rank("New England", None, 3, None)
+    profile = await analytics.profile("SFO")
+    compare = await analytics.compare(["LAX", "SNA"])
+
+    assert ranking["score_name"] == "Expansion Pressure Score"
+    assert compare["score_name"] == "Expansion Pressure Score"
+    assert profile["score"]["name"] == "Expansion Pressure Score"
+
+
+async def test_the_profile_says_what_its_percentiles_are_compared_with(analytics):
+    score = (await analytics.profile("SFO"))["score"]
+
+    assert score["compared_with"] == "228 scored peer airports nationally"
+    assert score["compared_with_airports"] == 228
+
+
 async def test_a_partial_weight_override_is_applied_and_reported_by_the_code(analytics):
     result = await analytics.rank("New England", None, 3, {"growth": 0.6})
 
