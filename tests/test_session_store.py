@@ -130,8 +130,7 @@ async def test_sessions_are_independent(store):
 
 
 async def test_a_new_store_instance_on_the_same_database_sees_the_session():
-    first_pool = await PostgresRepository.connect(DSN)
-    await first_pool.load_snapshot(SCHEMA, DATA)
+    first_pool = await connect_postgres()  # skips the test when Postgres is not reachable
     session = new_session()
     await PostgresSessionStore(first_pool.pool).save(session)
     await first_pool.close()  # the "restart": the first connection pool is gone

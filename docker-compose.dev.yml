@@ -1,0 +1,7 @@
+# Development only: publish Postgres on the host so the tests and the debugger can reach it.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
+# The API reaches Postgres over the compose network and does not need this.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"

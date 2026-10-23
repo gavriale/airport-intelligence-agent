@@ -1,7 +1,8 @@
 """One contract, two implementations.
 
 The in-memory repository always runs. The Postgres one runs when a database is reachable
-(`docker compose up -d postgres`, with DATABASE_URL pointing at it) and is skipped otherwise.
+(`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres`, with
+DATABASE_URL pointing at it) and is skipped otherwise.
 """
 
 import os

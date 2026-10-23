@@ -17,7 +17,7 @@ cp .env.example .env        # then put your ANTHROPIC_API_KEY in .env
 docker compose up --build   # Postgres + API; loads the committed snapshot at startup
 ```
 
-Open `http://localhost:8000` for the chat page. If port 5432 is taken: `POSTGRES_PORT=5433 docker compose up --build`.
+Open `http://localhost:8000` for the chat page. Postgres is not published to your machine, so a Postgres already running on 5432 does not conflict; if port 8000 is taken, set `API_PORT=8001` in `.env`.
 
 Without Docker (uses the in-memory repository and in-memory sessions, same data): `pip install -e ".[dev]"`, then `DATA_BACKEND=memory python cli.py` (or `make chat`) for a terminal chat.
 
@@ -25,7 +25,7 @@ Try: *Which airports in New England are strong candidates for terminal expansion
 
 **Without a key.** No model is needed for:
 
-- `make test`: unit and API tests with a fake model, no network (Postgres tests are skipped if it is not running).
+- `make test`: unit and API tests with a fake model, no network (the Postgres tests are skipped unless a database is reachable: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres`, then `DATABASE_URL=postgresql://agent:agent@localhost:5432/agent`; add `POSTGRES_PORT=5433` and use 5433 if 5432 is taken).
 - `GET /ranking`: the deterministic ranking, for example `curl "localhost:8000/ranking?region=New%20England"`. Also `GET /health`. (Start the API with `docker compose up`, or `DATA_BACKEND=memory uvicorn api.main:app_factory --factory`.)
 - `/chat` needs a key; without one it returns 503 with "Set ANTHROPIC_API_KEY to chat; GET /ranking works without it."
 

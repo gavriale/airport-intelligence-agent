@@ -1,4 +1,5 @@
-PY ?= .venv/Scripts/python
+# The project virtualenv on Windows or Linux/macOS, else `python` from the PATH.
+PY ?= $(or $(wildcard .venv/Scripts/python.exe),$(wildcard .venv/bin/python),python)
 
 run:
 	docker compose up --build

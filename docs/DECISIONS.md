@@ -132,6 +132,11 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 - **Alternatives considered:** Calling the APIs live from each tool (always fresh, slow and fragile; the BTS server cut off a large response during development); loading only on first run (cannot pick up a refreshed snapshot).
 - **Tradeoff / when I'd change it:** The snapshot ages until someone runs `make ingest`. In production I would schedule the refresh and show the as-of month in every answer, which the agent already does.
 
+## Postgres is not published to the host by default
+- **Chosen:** `docker-compose.yml` does not map Postgres to a host port; the API reaches it over the compose network. `docker-compose.dev.yml` (opt-in, `-f docker-compose.yml -f docker-compose.dev.yml`) publishes it on `127.0.0.1` for the tests and the debugger. The API port is `${API_PORT:-8000}`.
+- **Why:** A reviewer's first `docker compose up` failed when anything else on their machine used port 5432 ("port is already allocated"), which is common for developers. The API does not need the port, only a developer running the Postgres tests does.
+- **Tradeoff / when I'd change it:** Running the Postgres tests needs one extra compose flag, documented in the README.
+
 ## Peer airports: at least 100,000 passengers in the last 12 months
 - **Chosen:** 228 airports qualify (April 2026 data). Only they have traffic rows and only they enter the percentile ranking.
 - **Why:** Tiny airports have noisy growth rates (a few hundred passengers can double) and would distort percentiles. A fixed threshold is easy to explain and the value is stored in the snapshot.
