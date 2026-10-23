@@ -114,8 +114,10 @@ def build_tools(analytics: Analytics) -> list[Tool]:
             "compare_airports",
             "Compare 2 to 5 airports side by side: passengers, growth, load factor, runways, "
             "passengers and departures per runway per day, peak-month ratio and score. Use it for "
-            "'compare X and Y' and for congestion comparisons. 'highest_by_metric' says which "
-            "airport is highest on each measure.",
+            "'compare X and Y' and for congestion comparisons. comparison_by_metric gives the "
+            "highest, lowest, difference and ratio for each measure; points, main_driver, "
+            "leaders_by_component and score_spread explain the score. Use only these fields for "
+            "superlatives and for explanations.",
             CompareArgs,
             compare_airports,
         ),
