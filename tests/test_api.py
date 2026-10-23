@@ -24,7 +24,7 @@ async def test_chat_roundtrip_and_health_with_fake_llm(rig):
         ).json()
 
     assert first["reply"] == "Hello!"
-    assert first["escalated"] is False
+    assert first["failed"] is False
     assert second["session_id"] == first["session_id"]
     assert len(r.llm.calls[1][1]) == 3  # second call saw the first exchange
 

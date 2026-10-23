@@ -43,24 +43,22 @@ async def test_sessions_are_isolated(rig):
 
 
 async def test_tool_loop_runs_tool_and_feeds_result_back(rig):
-    r = rig([use(call("get_portfolio")), say("You have 125,400 NIS.")])
-    await r.verify()
+    r = rig([use(call("add", a=2, b=3)), say("The sum is 5.")])
 
-    result = await r.agent.run_turn("s1", "balance?")
+    result = await r.agent.run_turn("s1", "2+3?")
 
-    assert result.reply == "You have 125,400 NIS."
-    assert [t.name for t in result.tool_calls] == ["get_portfolio"]
-    assert "125400" in result.tool_calls[0].result
+    assert result.reply == "The sum is 5."
+    assert [t.name for t in result.tool_calls] == ["add"]
+    assert '"sum": 5' in result.tool_calls[0].result
     _, history = r.llm.calls[1]
     assert history[-1].tool_results[0].tool_call_id == "t1"
-    assert history[-2].tool_calls[0].name == "get_portfolio"
+    assert history[-2].tool_calls[0].name == "add"
 
 
 async def test_tool_history_is_kept_for_follow_up_turns(rig):
-    r = rig([use(call("get_portfolio")), say("ok"), say("again")])
-    await r.verify()
+    r = rig([use(call("add", a=1, b=1)), say("ok"), say("again")])
 
-    await r.agent.run_turn("s1", "balance?")
+    await r.agent.run_turn("s1", "first")
     await r.agent.run_turn("s1", "thanks")
 
     _, history = r.llm.calls[2]
@@ -68,27 +66,12 @@ async def test_tool_history_is_kept_for_follow_up_turns(rig):
 
 
 async def test_parallel_tool_calls_run_concurrently(rig):
-    r = rig([use(call("get_portfolio", "a"), call("get_recent_transactions", "b")), say("done")])
-    await r.verify()
     delay = 0.15
+    r = rig([use(call("slow", "a", delay=delay), call("slow", "b", delay=delay)), say("done")])
 
-    original = r.repo.get_portfolio
+    result = await r.agent.run_turn("s1", "two slow things")
 
-    async def slow_portfolio(customer_id):
-        await asyncio.sleep(delay)
-        return await original(customer_id)
-
-    original_tx = r.repo.get_transactions
-
-    async def slow_transactions(customer_id, limit):
-        await asyncio.sleep(delay)
-        return await original_tx(customer_id, limit)
-
-    r.repo.get_portfolio = slow_portfolio
-    r.repo.get_transactions = slow_transactions
-
-    result = await r.agent.run_turn("s1", "balance and transactions")
-
+    assert r.calls["slow"] == 2
     assert result.tools_ms < delay * 1000 * 1.8  # sequential would be >= 2 * delay
 
 
@@ -103,7 +86,7 @@ async def test_tool_error_is_returned_to_the_model_not_raised(rig):
 
 
 async def test_iteration_cap_stops_a_looping_model(rig):
-    r = rig([use(call("search_knowledge", query="fees"))] * 10, max_iterations=3)
+    r = rig([use(call("add", a=1, b=1))] * 10, max_iterations=3)
 
     result = await r.agent.run_turn("s1", "hi")
 
@@ -131,21 +114,13 @@ async def test_falls_back_and_does_not_save_the_turn_when_retries_run_out(rig):
     assert (await r.sessions.get_or_create("s1")).messages == []
 
 
-async def test_failure_after_a_tool_keeps_state_but_not_half_finished_history(rig):
-    r = rig(
-        [
-            use(call("verify_identity", customer_id="C001", phone_last4="4412")),
-            LLMError("503"),
-            LLMError("503"),
-        ]
-    )
+async def test_failure_after_a_tool_leaves_no_half_finished_history(rig):
+    r = rig([use(call("add", a=1, b=2)), LLMError("503"), LLMError("503")])
 
-    result = await r.agent.run_turn("s1", "I'm C001, 4412")
+    result = await r.agent.run_turn("s1", "hi")
 
-    session = await r.sessions.get_or_create("s1")
     assert result.failed
-    assert session.verified_customer_id == "C001"
-    assert session.messages == []
+    assert (await r.sessions.get_or_create("s1")).messages == []
 
 
 async def test_timeout_counts_as_a_failed_attempt(rig):
@@ -168,31 +143,3 @@ async def test_retry_count_is_configurable(rig, retries, expected_calls):
     await r.agent.run_turn("s1", "hi")
 
     assert len(r.llm.calls) == expected_calls
-
-
-async def test_advice_in_reply_is_replaced_and_not_stored(rig):
-    r = rig([say("Yes, you should buy the Global Equity Fund.")])
-
-    result = await r.agent.run_turn("s1", "what should I buy?")
-
-    assert result.policy_violation
-    assert "licensed" in result.reply
-    stored = (await r.sessions.get_or_create("s1")).messages
-    assert "should buy" not in stored[-1].content
-
-
-async def test_escalation_returns_handoff_and_short_circuits_later_turns(rig):
-    r = rig(
-        [
-            use(call("escalate_to_human", reason="user_request", summary="wants a person")),
-            say("Connecting you."),
-        ]
-    )
-
-    result = await r.agent.run_turn("s1", "let me talk to a person")
-    later = await r.agent.run_turn("s1", "hello?")
-
-    assert result.escalated
-    assert result.handoff.summary == "wants a person"
-    assert later.escalated
-    assert len(r.llm.calls) == 2  # no LLM call on the later turn

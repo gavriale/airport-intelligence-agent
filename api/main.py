@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from app.container import Container, build_container
 from app.settings import Settings
 from core.logging import configure_logging, correlation_id
-from core.session import Handoff
 
 MAX_MESSAGE_CHARS = 2000
 CHAT_PAGE = Path(__file__).resolve().parent / "static" / "index.html"
@@ -26,8 +25,6 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     reply: str
-    escalated: bool
-    handoff: Handoff | None
     failed: bool
 
 
@@ -71,8 +68,6 @@ def create_app(container: Container | None = None) -> FastAPI:
         return ChatResponse(
             session_id=session_id,
             reply=result.reply,
-            escalated=result.escalated,
-            handoff=result.handoff,
             failed=result.failed,
         )
 

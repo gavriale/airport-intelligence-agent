@@ -1,10 +1,8 @@
 import json
 import logging
 
-from adapters.fake_repository import FailingRepository
 from core.logging import ConsoleFormatter, JsonFormatter, correlation_id, log_event, session_id
-from core.session import Session
-from tests.conftest import DOMAIN, call, say, use
+from tests.conftest import call, say, use
 
 
 def records(caplog, event):
@@ -12,47 +10,56 @@ def records(caplog, event):
 
 
 async def test_failing_tool_handler_logs_a_traceback(rig, caplog):
-    r = rig([], repo=FailingRepository(DOMAIN / "data" / "seed.json"))
-    session = Session(id="s1", verified_customer_id="C001")
+    r = rig([])
 
     with caplog.at_level(logging.INFO, logger="agent"):
-        result = await r.tools.execute(call("get_portfolio"), session)
+        result = await r.tools.execute(call("boom"))
 
     assert result.is_error
     [failure] = records(caplog, "tool_exception")
     assert failure.levelno == logging.ERROR
-    assert "ConnectionError: backend down" in JsonFormatter().format(failure)
+    assert "RuntimeError: secret internals" in JsonFormatter().format(failure)
     assert failure.exc_info is not None
 
 
 async def test_tool_retry_is_logged_with_its_traceback(rig, caplog):
-    r = rig([], repo=FailingRepository(DOMAIN / "data" / "seed.json"))
+    r = rig([])
 
     with caplog.at_level(logging.INFO, logger="agent"):
-        await r.tools.execute(call("get_portfolio"), Session(id="s", verified_customer_id="C001"))
+        await r.tools.execute(call("flaky"))
 
     [retry] = records(caplog, "tool_retry")
-    assert retry.exc_info is not None
+    assert retry.levelno == logging.WARNING
+    assert "ConnectionError: temporary" in JsonFormatter().format(retry)
 
 
 async def test_tool_call_event_has_name_ms_error_flag_and_code(rig, caplog):
     r = rig([])
 
     with caplog.at_level(logging.INFO, logger="agent"):
-        await r.tools.execute(call("get_portfolio"), Session(id="s1"))  # not verified
+        await r.tools.execute(call("refuse"))
 
     [event] = records(caplog, "tool_call")
-    assert event.fields["name"] == "get_portfolio"
+    assert event.fields["name"] == "refuse"
     assert event.fields["is_error"] is True
-    assert event.fields["error_code"] == "identity_not_verified"
+    assert event.fields["error_code"] == "not_found"
     assert isinstance(event.fields["ms"], int)
+
+
+async def test_expected_errors_are_not_logged_as_exceptions(rig, caplog):
+    r = rig([])
+
+    with caplog.at_level(logging.INFO, logger="agent"):
+        await r.tools.execute(call("refuse"))
+
+    assert records(caplog, "tool_exception") == []
 
 
 async def test_successful_tool_call_event_has_no_error_code(rig, caplog):
     r = rig([])
 
     with caplog.at_level(logging.INFO, logger="agent"):
-        await r.tools.execute(call("get_portfolio"), Session(id="s1", verified_customer_id="C001"))
+        await r.tools.execute(call("add", a=1, b=2))
 
     [event] = records(caplog, "tool_call")
     assert (event.fields["is_error"], event.fields["error_code"]) == (False, None)
@@ -112,9 +119,9 @@ def test_console_format_is_one_readable_line(caplog):
 
 
 async def test_agent_sets_session_id_for_every_line(rig, caplog):
-    r = rig([use(call("search_knowledge", query="fees")), say("ok")])
+    r = rig([use(call("add", a=1, b=2)), say("ok")])
 
     with caplog.at_level(logging.INFO, logger="agent"):
-        await r.agent.run_turn("my-session", "fees?")
+        await r.agent.run_turn("my-session", "add?")
 
     assert session_id.get() == "my-session"

@@ -15,6 +15,3 @@ class Settings(BaseSettings):
     llm_cache: bool = False
     tool_timeout_s: float = 10
     max_iterations: int = 6
-    # "fake" runs on in-memory seed data (no Docker needed): handy for the CLI and evals.
-    data_backend: Literal["postgres", "fake"] = "postgres"
-    database_url: str = "postgresql://agent:agent@localhost:5432/agent"

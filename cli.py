@@ -1,7 +1,4 @@
-"""Interactive chat for demos: `python cli.py`. Type 'exit' to quit.
-
-Set DATA_BACKEND=fake to run without Postgres.
-"""
+"""Interactive chat for demos: `python cli.py`. Type 'exit' to quit."""
 
 import asyncio
 import uuid
@@ -23,7 +20,7 @@ async def main() -> None:
             result = await container.agent.run_turn(session_id, user_text)
             tools = ", ".join(t.name for t in result.tool_calls) or "-"
             print(f"agent> {result.reply}")
-            flags = f"tools: {tools} | escalated: {result.escalated}"
+            flags = f"tools: {tools}"
             print(f"       [{result.latency_ms:.0f} ms | {flags}]\n")
     finally:
         await container.close()

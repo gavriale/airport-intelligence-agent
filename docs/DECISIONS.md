@@ -1,5 +1,7 @@
 # Decision log
 
+> **Stale:** this document describes the placeholder investment-house version of the project (git tag `placeholder-domain`). It is being rewritten for the airport assignment.
+
 ## No agent framework
 - **Chosen:** Hand-written agent loop on top of the thin Anthropic SDK.
 - **Why:** The loop is the core of the product. Owning it means I can explain every line, put timeouts, retries and guardrails exactly where I want them, and test it with a scripted fake LLM.

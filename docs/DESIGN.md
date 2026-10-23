@@ -1,5 +1,7 @@
 # Design
 
+> **Stale:** this document describes the placeholder investment-house version of the project (git tag `placeholder-domain`). It is being rewritten for the airport assignment.
+
 ## The client's problem (placeholder domain)
 Example Investments' call center is overloaded with routine questions: "what's my balance", "where is my withdrawal", "what's the early withdrawal fee". Each call costs a human agent's time, while the cases that need a human (fraud, complaints, licensed advice) wait in the same queue. The agent handles the routine, verified, read-mostly requests and hands the rest to a person with a structured summary.
 

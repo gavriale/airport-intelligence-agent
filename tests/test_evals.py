@@ -1,18 +1,19 @@
 """The eval machinery itself (scoring, judge parsing, case file) - no live model involved."""
 
-import pytest
+from pathlib import Path
 
 from core.agent import ToolCallRecord, TurnResult
 from evals.judges import _parse
 from evals.runner import Case, CaseResult, Expect, check_case, load_cases, p95, render
-from tests.conftest import DOMAIN
+
+CASES_FILE = Path(__file__).resolve().parent.parent / "domain" / "eval_cases.yaml"
 
 
-def turn(reply: str, tools=(), escalated=False) -> TurnResult:
+def turn(reply: str, tools=()) -> TurnResult:
     records = [
         ToolCallRecord(name=n, arguments={}, result="{}", is_error=False, ms=1) for n in tools
     ]
-    return TurnResult(reply=reply, tool_calls=records, escalated=escalated)
+    return TurnResult(reply=reply, tool_calls=records)
 
 
 def case(**expect) -> Case:
@@ -20,30 +21,28 @@ def case(**expect) -> Case:
 
 
 def test_passing_case_has_no_failures():
-    c = case(tools_called=["get_portfolio"], answer_matches=["125,?400"], escalated=False)
+    c = case(tools_called=["rank_airports"], answer_matches=["April 2026"])
 
-    assert check_case(c, [turn("You have 125,400 NIS", ["get_portfolio"])], 0) == []
+    assert check_case(c, [turn("As of April 2026, BOS leads", ["rank_airports"])]) == []
 
 
 def test_each_kind_of_failure_is_reported():
     c = case(
-        tools_called=["get_portfolio"],
-        tools_not_called=["request_withdrawal"],
-        answer_matches=["125,?400"],
+        tools_called=["rank_airports"],
+        tools_not_called=["get_live_status"],
+        answer_matches=["April 2026"],
         answer_not_matches=["secret"],
-        escalated=True,
-        withdrawals_created=0,
     )
 
-    failures = check_case(c, [turn("secret", ["request_withdrawal"])], 1)
+    failures = check_case(c, [turn("secret", ["get_live_status"])])
 
-    assert len(failures) == 6
+    assert len(failures) == 4
 
 
 def test_tools_are_collected_across_turns_and_answer_is_the_last_reply():
     c = case(tools_called=["a", "b"], answer_matches=["done"])
 
-    assert check_case(c, [turn("x", ["a"]), turn("done", ["b"])], 0) == []
+    assert check_case(c, [turn("x", ["a"]), turn("done", ["b"])]) == []
 
 
 def test_judge_parse_accepts_fenced_json_and_fails_closed():
@@ -64,21 +63,7 @@ def test_p95_and_report():
     assert "`b`: boom" in report
 
 
-@pytest.mark.parametrize("path", [DOMAIN / "eval_cases.yaml"])
-def test_eval_case_file_is_valid_and_covers_every_category(path):
-    cases = load_cases(path)
+def test_eval_case_file_loads_and_ids_are_unique():
+    cases = load_cases(CASES_FILE)  # empty until the evals stage
 
-    assert 15 <= len(cases) <= 20
     assert len({c.id for c in cases}) == len(cases)
-    assert {c.category for c in cases} >= {
-        "happy_path",
-        "knowledge",
-        "identity_gate",
-        "write_action",
-        "advice_refusal",
-        "escalation",
-        "out_of_scope",
-        "injection",
-        "multi_turn",
-        "tool_failure",
-    }

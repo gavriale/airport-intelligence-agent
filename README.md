@@ -1,66 +1,50 @@
-# Customer-service agent skeleton
+# Airport Investment Intelligence Agent
 
-A small tool-calling agent for a regulated customer-service domain, with the agent loop written by hand (no agent framework). The placeholder domain is a fictional Israeli investment house, "Example Investments". Everything domain-specific lives in `domain/`; `core/` is generic.
+A chat agent that helps analysts of an investment firm find US airports where terminal or capacity expansion looks most promising. It uses public aviation data, ranks airports with a deterministic score (not model output), explains its reasoning, and states assumptions and uncertainty. The task is in [ASSIGNMENT.md](ASSIGNMENT.md); project rules are in [CLAUDE.md](CLAUDE.md).
 
-It verifies identity in code before showing personal data, answers account questions through read tools, opens a withdrawal request only after explicit confirmation (with an idempotency key), answers general questions from a BM25 knowledge base, refuses personalised investment advice, and escalates to a human with a structured handoff.
-
-## Run it
-
-```bash
-cp .env.example .env        # then put your ANTHROPIC_API_KEY in .env
-docker compose up --build   # Postgres + API; seeds on startup (safe to restart)
-```
-
-Port 5432 already taken on your machine? `POSTGRES_PORT=5433 docker compose up --build`.
-
-```bash
-open http://localhost:8000   # chat UI
-curl localhost:8000/health
-curl -s localhost:8000/chat -H 'content-type: application/json' \
-  -d '{"message": "Hi, I am C001, last 4 digits 4412. What is my balance?"}'
-# reuse the returned session_id in the next request to continue the conversation
-```
-
-Without Docker (in-memory seed data), using the project virtualenv:
-
-```bash
-pip install -e ".[dev]"
-DATA_BACKEND=fake python cli.py     # interactive demo
-make test                            # unit + API tests (Postgres tests skip if it isn't running)
-make eval                            # live-model evals, needs the API key
-make lint
-```
-
-Save money while debugging: set `LLM_CACHE=1` in `.env` to replay identical LLM calls from `.llm_cache/` (dev only; look for `llm_cache_hit` / `llm_cache_miss` in the logs; delete the folder to start fresh; evals ignore it).
-
-Postgres integration tests: `docker compose up -d postgres`, then `make test` (set `DATABASE_URL` if you changed the port).
-
-## Sample conversation
-
-```
-you>   What's my balance?
-agent> I can help with that. First I need to verify you: please send your customer ID and the last 4 digits of your phone number.
-you>   C001, 4412
-agent> Thanks, you're verified. Your total balance is 125,400 NIS: 45,400 in the Money Market Fund and 80,000 in the Tel Aviv 35 Index Fund.
-you>   Withdraw 5,000
-agent> To confirm: withdraw 5,000 NIS from your account. Shall I go ahead?
-you>   Yes
-agent> Done: withdrawal request W-2000 for 5,000 NIS is pending.
-```
-This is an illustration of the intended behaviour, not a captured transcript: the live model has not been run in the environment this was built in.
+The agent loop is written by hand (no agent framework). The model chooses tools and explains results; all numbers come from tool results computed by code.
 
 ## Status
 
-| Area | State |
+Work is staged. **Stage 1 is done: the previous placeholder domain was removed and the engine is generic.**
+
+| Stage | State |
 |---|---|
-| Unit and API tests (fake LLM) | 58 passing, including Postgres integration tests against a real container |
-| `docker compose up` | Verified from a clean state and on restart (seed is idempotent); `/health` checked |
-| Live-model evals (20 cases) | **Not run yet** (no API key available while building). See `docs/EVALS.md` |
-| `/chat` against the real Anthropic API | Not exercised yet, for the same reason |
+| 1. Strip the old domain, rewrite instructions | done |
+| 2. Data layer: schema, ingest, committed snapshot, repository | next |
+| 3. Scoring and airport tools | not started |
+| 4. Prompt, API and chat UI polish | partly in place (chat UI and API run, but there are no airport tools yet) |
+| 5. Evals (no cases yet) | not started |
+| 6. Docs and presentation | not started |
+
+Data sources and their limits were checked first: see [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md).
+
+## Run
+
+```bash
+cp .env.example .env        # then put your ANTHROPIC_API_KEY in .env
+docker compose up --build   # Postgres + API (port 5432 taken? POSTGRES_PORT=5433 docker compose up --build)
+```
+
+Then open `http://localhost:8000` for the chat page, or `GET /health`.
+
+Without Docker, with the project virtualenv:
+
+```bash
+pip install -e ".[dev]"
+python cli.py        # interactive demo
+make test            # unit and API tests (fake model, no network)
+make lint
+```
+
+Development helpers: `LOG_FORMAT=console` for readable logs; `LLM_CACHE=1` replays identical model calls from `.llm_cache/` (development only; evals ignore it).
+
+## Layout
+
+`core/` generic engine (loop, tool registry, sessions, logging) · `adapters/` model, cache and session adapters · `app/` settings and wiring · `api/` FastAPI and chat page · `domain/` airport-specific files (prompt and tools now; scoring and data arrive in the next stages) · `evals/` runner and judge · `tests/`.
 
 ## Docs
-- [DESIGN](docs/DESIGN.md): problem, architecture, one turn
-- [DECISIONS](docs/DECISIONS.md): what/why/alternatives/tradeoffs, including what is enforced in code vs. the prompt
-- [EVALS](docs/EVALS.md): methodology, rubric, results (pending), known limits
-- [PRODUCTION](docs/PRODUCTION.md): integration, deployment, latency, scaling, security (documented, not built)
-- [SWAP_GUIDE](docs/SWAP_GUIDE.md): which files change for a new domain
+
+- [DATA_SPIKE](docs/DATA_SPIKE.md): checks of the public data sources (current).
+- DESIGN, DECISIONS, EVALS, PRODUCTION, SWAP_GUIDE: carry a "Stale" banner. They describe the earlier placeholder version (git tag `placeholder-domain`) and will be rewritten.
+- Learning material (`docs/PYTHON_GUIDE.html`, `docs/FDE_MENTAL_MODEL.html`, `docs/FLOW.html`): general explanations whose code examples come from the `placeholder-domain` version.

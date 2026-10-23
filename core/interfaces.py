@@ -48,13 +48,6 @@ class LLMResponse(BaseModel):
     output_tokens: int = 0
 
 
-class KnowledgeHit(BaseModel):
-    doc_id: str
-    title: str
-    text: str
-    score: float
-
-
 class LLMProvider(Protocol):
     async def complete(
         self, system: str, messages: list[Message], tools: list[ToolSpec]
@@ -65,15 +58,3 @@ class SessionStore(Protocol):
     async def get_or_create(self, session_id: str) -> Session: ...
 
     async def save(self, session: Session) -> None: ...
-
-
-class DataRepository(Protocol):
-    """What core needs from the client's backend: checking who the customer is.
-
-    Domain tools use a richer repository (see `domain/tools.py`) that extends this."""
-
-    async def verify_identity(self, customer_id: str, secret: str) -> bool: ...
-
-
-class KnowledgeIndex(Protocol):
-    async def search(self, query: str, k: int = 3) -> list[KnowledgeHit]: ...

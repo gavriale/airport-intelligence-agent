@@ -1,5 +1,7 @@
 # Production plan
 
+> **Stale:** this document describes the placeholder investment-house version of the project (git tag `placeholder-domain`). It is being rewritten for the airport assignment.
+
 Everything here is **documented, not built**, unless it says "already implemented".
 
 ## Integration with the client's systems

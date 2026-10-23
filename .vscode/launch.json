@@ -2,20 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "CLI chat (in-memory data)",
+      "name": "CLI chat",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/cli.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
-        "DATA_BACKEND": "fake",
         "LLM_TIMEOUT_S": "3600",
         "TOOL_TIMEOUT_S": "3600"
       }
     },
     {
-      "name": "API server (in-memory data)",
+      "name": "API server",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
@@ -23,7 +22,6 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
-        "DATA_BACKEND": "fake",
         "LLM_TIMEOUT_S": "3600",
         "TOOL_TIMEOUT_S": "3600"
       }
@@ -37,7 +35,6 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
-        "DATA_BACKEND": "postgres",
         "DATABASE_URL": "postgresql://agent:agent@localhost:5433/agent",
         "LLM_TIMEOUT_S": "3600",
         "TOOL_TIMEOUT_S": "3600"

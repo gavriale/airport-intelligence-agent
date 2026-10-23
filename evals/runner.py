@@ -1,6 +1,6 @@
 """Runs domain/eval_cases.yaml against the live model: `python -m evals.runner`.
 
-Deterministic checks first (tools, regexes, escalation flag, side effects), then one LLM-judge
+Deterministic checks first (tools called, required and forbidden text), then one LLM-judge
 groundedness check where a case asks for it. This is the only code that calls the live model.
 """
 
@@ -16,8 +16,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from adapters.anthropic_llm import AnthropicLLM
-from adapters.fake_repository import FailingRepository, FakeRepository
-from app.container import DATA_DIR, DOMAIN_DIR, build_container
+from app.container import DOMAIN_DIR, build_container
 from app.settings import Settings
 from core.agent import TurnResult
 from core.interfaces import LLMProvider
@@ -32,8 +31,6 @@ class Expect(BaseModel):
     tools_not_called: list[str] = []
     answer_matches: list[str] = []
     answer_not_matches: list[str] = []
-    escalated: bool | None = None
-    withdrawals_created: int | None = None
     judge_grounded: bool = False
 
 
@@ -41,8 +38,6 @@ class Case(BaseModel):
     id: str
     category: str
     turns: list[str]
-    verified_as: str | None = None
-    backend: str = "fake"
     expect: Expect = Field(default_factory=Expect)
 
 
@@ -55,10 +50,10 @@ class CaseResult(BaseModel):
 
 
 def load_cases(path: Path) -> list[Case]:
-    return [Case(**raw) for raw in yaml.safe_load(path.read_text(encoding="utf-8"))]
+    return [Case(**raw) for raw in yaml.safe_load(path.read_text(encoding="utf-8")) or []]
 
 
-def check_case(case: Case, results: list[TurnResult], withdrawals_created: int) -> list[str]:
+def check_case(case: Case, results: list[TurnResult]) -> list[str]:
     """Deterministic checks. Returns a list of failure descriptions (empty = pass)."""
     expect, failures = case.expect, []
     called = {t.name for r in results for t in r.tool_calls}
@@ -72,28 +67,15 @@ def check_case(case: Case, results: list[TurnResult], withdrawals_created: int) 
     for pattern in expect.answer_not_matches:
         if re.search(pattern, answer, re.IGNORECASE | re.MULTILINE):
             failures.append(f"answer must not match /{pattern}/")
-    if expect.escalated is not None and results[-1].escalated != expect.escalated:
-        failures.append(f"escalated was {results[-1].escalated}, expected {expect.escalated}")
-    wanted = expect.withdrawals_created
-    if wanted is not None and withdrawals_created != wanted:
-        failures.append(f"{withdrawals_created} withdrawals created, expected {wanted}")
     return failures
 
 
 async def run_case(case: Case, settings: Settings, llm: LLMProvider) -> CaseResult:
-    repo_class = FailingRepository if case.backend == "failing" else FakeRepository
-    repo = repo_class(DATA_DIR / "seed.json")
-    baseline = len(repo.withdrawals)
-    container = await build_container(settings, llm=llm, repository=repo)
-
+    container = await build_container(settings, llm=llm)
     session_id = str(uuid.uuid4())
-    if case.verified_as:
-        session = await container.sessions.get_or_create(session_id)
-        session.verified_customer_id = case.verified_as
-
     results = [await container.agent.run_turn(session_id, text) for text in case.turns]
 
-    failures = check_case(case, results, len(repo.withdrawals) - baseline)
+    failures = check_case(case, results)
     if case.expect.judge_grounded:
         evidence = [t.result for r in results for t in r.tool_calls]
         verdict = await judge_groundedness(llm, evidence, results[-1].reply)
@@ -149,6 +131,9 @@ async def main() -> None:
     # Built directly (not via the container's default), so the dev cache can never apply.
     llm = AnthropicLLM(settings.anthropic_api_key.get_secret_value(), settings.model)
     cases = load_cases(DOMAIN_DIR / "eval_cases.yaml")
+    if not cases:
+        print("No eval cases yet (domain/eval_cases.yaml is empty).")
+        return
     gate = asyncio.Semaphore(CONCURRENCY)
 
     async def limited(case: Case) -> CaseResult:

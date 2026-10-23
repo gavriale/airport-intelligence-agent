@@ -20,7 +20,6 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://agent:agent@postgres:5432/agent
-      DATA_BACKEND: postgres
     ports:
       - "8000:8000"
     depends_on:

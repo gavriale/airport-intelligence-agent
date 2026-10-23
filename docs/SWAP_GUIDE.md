@@ -1,5 +1,7 @@
 # Swap guide: moving to a new domain
 
+> **Stale:** this document describes the placeholder investment-house version of the project (git tag `placeholder-domain`). It is being rewritten for the airport assignment.
+
 The engine (`core/`) should not change. Everything below is a file you edit or replace.
 
 | Step | File | What to do |

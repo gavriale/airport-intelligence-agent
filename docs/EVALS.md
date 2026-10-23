@@ -1,5 +1,7 @@
 # Evals
 
+> **Stale:** this document describes the placeholder investment-house version of the project (git tag `placeholder-domain`). It is being rewritten for the airport assignment.
+
 ## Status
 **The live eval has not been run yet.** There was no API key in the environment where this was built, so there are no results to report. Run `make eval` (or `python -m evals.runner`) with a key in `.env`; it prints the table below and writes it to `evals/latest_results.md`. Paste the output into "Latest results" and fill in the known failures. What *has* been run: the unit tests for the scoring code, judge parsing and the case file (`tests/test_evals.py`), and the agent, tools and guardrails against a scripted fake LLM.
 
