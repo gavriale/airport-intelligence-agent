@@ -67,6 +67,8 @@ class AnthropicLLM:
                 + (usage.cache_read_input_tokens or 0)
             ),
             output_tokens=usage.output_tokens,
+            cache_read_tokens=usage.cache_read_input_tokens or 0,
+            cache_write_tokens=usage.cache_creation_input_tokens or 0,
         )
 
 

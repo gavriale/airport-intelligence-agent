@@ -44,8 +44,10 @@ class Message(BaseModel):
 class LLMResponse(BaseModel):
     text: str = ""
     tool_calls: list[ToolCall] = Field(default_factory=list)
-    input_tokens: int = 0
+    input_tokens: int = 0  # everything sent, including parts served from the prompt cache
     output_tokens: int = 0
+    cache_read_tokens: int = 0  # part of input_tokens read from the cache
+    cache_write_tokens: int = 0  # part of input_tokens written to the cache
 
 
 class LLMProvider(Protocol):

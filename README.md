@@ -6,7 +6,7 @@ The agent loop is written by hand (no agent framework). The model chooses tools 
 
 ## Status
 
-Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** Evals and the final docs are still to do.
+Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** The evals are built and have been run once; the final docs are still to do.
 
 | Stage | State |
 |---|---|
@@ -14,7 +14,7 @@ Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the da
 | 2. Data layer: schema, ingest, committed snapshot, repository | done |
 | 3. Scoring and airport tools | done |
 | 4. Prompt, API and chat UI polish | prompt and `GET /ranking` done; the chat page works but is plain |
-| 5. Evals (no cases yet) | not started |
+| 5. Evals | built and run once (12 of 18 cases pass; failures diagnosed, not yet fixed): see [docs/EVALS.md](docs/EVALS.md) |
 | 6. Docs and presentation | not started |
 
 Data sources and their limits were checked first: see [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md).
@@ -49,5 +49,6 @@ Development helpers: `LOG_FORMAT=console` for readable logs; `LLM_CACHE=1` repla
 
 - [DATA_SPIKE](docs/DATA_SPIKE.md): checks of the public data sources and ingest findings (current).
 - [DECISIONS](docs/DECISIONS.md): decisions with reasons and tradeoffs (current).
-- DESIGN, EVALS, PRODUCTION, SWAP_GUIDE: carry a "Stale" banner. They describe the earlier placeholder version (git tag `placeholder-domain`) and will be rewritten.
+- [EVALS](docs/EVALS.md): plan, method and the first results (current).
+- DESIGN, PRODUCTION, SWAP_GUIDE: carry a "Stale" banner. They describe the earlier placeholder version (git tag `placeholder-domain`) and will be rewritten.
 - Learning material (`docs/PYTHON_GUIDE.html`, `docs/FDE_MENTAL_MODEL.html`, `docs/FLOW.html`): general explanations whose code examples come from the `placeholder-domain` version.
