@@ -152,7 +152,7 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 ## Logging: two formats, caller location, tracebacks, per-tool events
 - **Chosen:** `LOG_FORMAT=json|console`. Every line carries file, line and function of the caller, a correlation id and a session id (context variables). Each tool call logs a `tool_call` event. Places that turn an exception into an error result or a fallback also log it with the traceback. Message text is never logged.
 - **Why:** JSON for log systems, a readable line for local debugging. Converting errors into results is right for the loop but would otherwise hide the cause.
-- **Tradeoff / when I'd change it:** Debugging message content needs a debugger or a controlled transcript store. In production this becomes OpenTelemetry traces (see `docs/PRODUCTION.md` when rewritten).
+- **Tradeoff / when I'd change it:** Debugging message content needs a debugger or a controlled transcript store. In production this becomes OpenTelemetry traces (see section 10 of `DESIGN.md`).
 
 ## Development cache and prompt caching
 - **Chosen:** `LLM_CACHE=1` replays identical model calls from `.llm_cache/` (development only, off by default, never used by evals). Separately, the Anthropic adapter asks for prompt caching on every request; measured on real calls, a repeated 1,959-token prefix was served from cache on the second call.

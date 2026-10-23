@@ -48,7 +48,7 @@ An investment firm wants an agent that helps analysts find US airports where ren
 
 ```
 .
-├── CLAUDE.md, ASSIGNMENT.md, README.md
+├── CLAUDE.md, ASSIGNMENT.md, README.md, DESIGN.md
 ├── Dockerfile, docker-compose.yml, Makefile      # run, chat, test, eval, lint, ingest
 ├── core/                  # generic engine
 │   ├── interfaces.py      # LLMProvider, SessionStore, message and tool models
@@ -73,7 +73,7 @@ An investment firm wants an agent that helps analysts find US airports where ren
 ├── scripts/ingest.py      # builds the snapshot from public APIs
 ├── evals/                 # runner.py, judges.py
 ├── tests/
-└── docs/                  # DESIGN, DECISIONS, EVALS, PRODUCTION, DATA_SPIKE, PRESENTATION
+└── docs/                  # DECISIONS, EVALS, DATA_SPIKE, PRESENTATION
 ```
 
 ## Data sources (verified in docs/DATA_SPIKE.md)
@@ -134,7 +134,7 @@ Identity verification, write actions with confirmation and idempotency, escalati
 
 ## Documentation
 
-`DESIGN.md` (scoring methodology, tradeoffs, where AI is used, flow of one turn), `DECISIONS.md` (what, why, alternatives, tradeoff), `EVALS.md` (method, rubric, real results, known failures), `PRODUCTION.md` (documented, not built), `DATA_SPIKE.md` (source checks), `PRESENTATION.md` (5-minute talk track and likely questions). Docs are written from what was actually built.
+`DESIGN.md` at the repo root (scoring methodology, tradeoffs, where AI is used, flow of one turn), `DECISIONS.md` (what, why, alternatives, tradeoff), `EVALS.md` (method, rubric, real results, known failures), `DATA_SPIKE.md` (source checks), `PRESENTATION.md` (5-minute talk track and likely questions). Docs are written from what was actually built.
 
 ## Working agreements
 
@@ -142,5 +142,5 @@ Identity verification, write actions with confirmation and idempotency, escalati
 - Commit at the end of a stage with a clear message. Do not push.
 - Do not spend live-model tokens or download large files without asking. Say clearly what is not verified.
 - Build order: (1) strip old domain and rewrite instructions [done], (2) data layer: schema, ingest, snapshot, repository [done], (3) scoring and tools [done], (4) prompt, API and UI, (5) evals, (6) docs and presentation.
-- At the docs stage every document with a "Stale" banner is rewritten or deleted. `docs/SWAP_GUIDE.md` is deleted.
+- At the docs stage every document with a "Stale" banner was rewritten or deleted; `PRODUCTION.md` was folded into `DESIGN.md`, `SWAP_GUIDE.md` deleted. `docs/PRESENTATION.md` is `export-ignore`.
 - The learning guides and this file are marked `export-ignore` in `.gitattributes`, so `git archive` leaves them out of the submission.

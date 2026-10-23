@@ -1,54 +1,46 @@
 # Airport Investment Intelligence Agent
 
-A chat agent that helps analysts of an investment firm find US airports where terminal or capacity expansion looks most promising. It uses public aviation data, ranks airports with a deterministic score (not model output), explains its reasoning, and states assumptions and uncertainty. The task is in [ASSIGNMENT.md](ASSIGNMENT.md); project rules are in [CLAUDE.md](CLAUDE.md).
+A chat agent that helps analysts of an investment firm find US airports where terminal or capacity expansion looks most promising. It uses public aviation data (BTS T-100, OurAirports, FAA live status), ranks airports with a **deterministic score computed in code**, explains its reasoning, and states assumptions and uncertainty. The task is in [ASSIGNMENT.md](ASSIGNMENT.md).
 
-The agent loop is written by hand (no agent framework). The model chooses tools and explains results; all numbers come from tool results computed by code.
+The agent loop is written by hand (no agent framework). The model chooses tools and explains results; every number comes from a tool result.
 
-## Status
+- **[DESIGN.md](DESIGN.md)**: scoring methodology, architecture, tradeoffs, where AI is used, excluded factors, next steps.
+- **[docs/EVALS.md](docs/EVALS.md)**: how the agent is evaluated, results of four runs, known failures.
+- [docs/DECISIONS.md](docs/DECISIONS.md): every decision with alternatives and tradeoffs. [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md): checks of the data sources.
 
-Work is staged. **Stages 1 to 3 are done: the placeholder domain is gone, the data snapshot and repositories are in place, and the scoring and the eight airport tools work.** The evals are built and have been run three times; the final docs are still to do.
+## Run it
 
-| Stage | State |
-|---|---|
-| 1. Strip the old domain, rewrite instructions | done |
-| 2. Data layer: schema, ingest, committed snapshot, repository | done |
-| 3. Scoring and airport tools | done |
-| 4. Prompt, API and chat UI polish | prompt and `GET /ranking` done; the chat page works but is plain |
-| 5. Evals | built and run four times (67%, 60%, 85%, 75%; run 4 added code-computed score explanations and passes 15 of 20, the 5 failures are documented): see [docs/EVALS.md](docs/EVALS.md) |
-| 6. Docs and presentation | not started |
-
-Data sources and their limits were checked first: see [docs/DATA_SPIKE.md](docs/DATA_SPIKE.md).
-
-## Run
+**With a key (full chat).**
 
 ```bash
 cp .env.example .env        # then put your ANTHROPIC_API_KEY in .env
-docker compose up --build   # Postgres + API; loads the committed snapshot at startup (port 5432 taken? POSTGRES_PORT=5433 docker compose up --build)
+docker compose up --build   # Postgres + API; loads the committed snapshot at startup
 ```
 
-Then open `http://localhost:8000` for the chat page, or `GET /health`.
+Open `http://localhost:8000` for the chat page. If port 5432 is taken: `POSTGRES_PORT=5433 docker compose up --build`.
 
-Without Docker, with the project virtualenv:
+Without Docker (uses the in-memory repository, same data): `pip install -e ".[dev]"`, then `DATA_BACKEND=memory python cli.py` (or `make chat`) for a terminal chat.
 
-```bash
-pip install -e ".[dev]"
-DATA_BACKEND=memory python cli.py   # interactive demo without Docker (or: make chat)
-curl "localhost:8000/ranking?region=New%20England"   # deterministic ranking, no model, no API key
-make test            # unit and API tests (fake model, no network); Postgres tests skip if it is not running
-make lint
-make ingest          # rebuild domain/data/ from the public APIs (needs internet, about a minute)
-```
+Try: *Which airports in New England are strong candidates for terminal expansion?* then *What if we weigh passenger growth much more heavily?*, or *Compare LA and Santa Ana airport congestion.*
 
-Development helpers: `LOG_FORMAT=console` for readable logs; `LLM_CACHE=1` replays identical model calls from `.llm_cache/` (development only; evals ignore it).
+**Without a key.** No model is needed for:
+
+- `make test`: unit and API tests with a fake model, no network (Postgres tests are skipped if it is not running).
+- `GET /ranking`: the deterministic ranking, for example `curl "localhost:8000/ranking?region=New%20England"`. Also `GET /health`. (Start the API with `docker compose up`, or `DATA_BACKEND=memory uvicorn api.main:app_factory --factory`.)
+- `/chat` needs a key; without one it returns a server error.
+
+`make lint`, `make eval` (calls the live model, about $1 and 90 seconds), `make ingest` (rebuilds `domain/data/` from the public APIs, needs internet, about a minute).
+
+## Results summary
+
+20 eval cases, four runs: 67%, 60%, 85%, 75% (run 4 passes 15 of 20). No unsafe answers; two safety cases are at 2 of 3 because of an eval-measurement issue, not agent behavior. Differences of a couple of cases are within noise (one sample per case, same-model judge). Details in [docs/EVALS.md](docs/EVALS.md).
+
+## What it cannot tell you
+
+Data is monthly and about six months old (latest April 2026). There is no terminal or gate data, no delay history, no route-level or carrier-by-airport data, and unmet demand and profitability are not measured. For example, the exact long-haul share at Anchorage is not computable; the agent gives two proxies and says so.
 
 ## Layout
 
-`core/` generic engine (loop, tool registry, sessions, logging) · `adapters/` model, cache and session adapters · `app/` settings and wiring · `api/` FastAPI and chat page · `domain/` airport-specific files (prompt, data snapshot, repository interface; tools and scoring come next) · `scripts/ingest.py` builds the snapshot · `evals/` runner and judge · `tests/`.
+`core/` generic engine (loop, tool registry, sessions, logging) · `adapters/` model, data, cache and session adapters · `app/` settings and wiring · `api/` FastAPI and chat page · `domain/` everything airport-specific (config, prompt, scoring, tools, data snapshot, eval cases) · `scripts/ingest.py` builds the snapshot · `evals/` runner and judge · `tests/`.
 
-## Docs
-
-- [DATA_SPIKE](docs/DATA_SPIKE.md): checks of the public data sources and ingest findings (current).
-- [DECISIONS](docs/DECISIONS.md): decisions with reasons and tradeoffs (current).
-- [EVALS](docs/EVALS.md): plan, method and the first results (current).
-- DESIGN, PRODUCTION, SWAP_GUIDE: carry a "Stale" banner. They describe the earlier placeholder version (git tag `placeholder-domain`) and will be rewritten.
-- Learning material (`docs/PYTHON_GUIDE.html`, `docs/FDE_MENTAL_MODEL.html`, `docs/FLOW.html`): general explanations whose code examples come from the `placeholder-domain` version.
+Learning material (`docs/PYTHON_GUIDE.html`, `docs/FDE_MENTAL_MODEL.html`, `docs/FLOW.html`) explains general concepts; its code examples come from the earlier placeholder version (git tag `placeholder-domain`).
