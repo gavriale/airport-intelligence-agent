@@ -141,11 +141,13 @@ class Agent:
     async def _run_tools(self, calls: list[ToolCall], stats: _TurnStats) -> list[ToolResult]:
         """Independent calls from one model turn run concurrently."""
         started = time.perf_counter()
-        timed = await asyncio.gather(*(self._timed_tool_call(c) for c in calls))
+        results_and_records = await asyncio.gather(*(self._timed_tool_call(c) for c in calls))
         stats.tools_ms += _ms_since(started)
-        stats.tool_calls.extend(record for _, record in timed)
-        return [result for result, _ in timed]
+        results = [result for result, _ in results_and_records]
+        stats.tool_calls.extend(record for _, record in results_and_records)
+        return results
 
+    # Returns (result for the model, record for turn stats and logging).
     async def _timed_tool_call(self, call: ToolCall) -> tuple[ToolResult, ToolCallRecord]:
         started = time.perf_counter()
         result = await self._tools.execute(call)
