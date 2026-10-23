@@ -35,7 +35,10 @@ class RankArgs(BaseModel):
         default=None,
         description=(
             "Optional weight overrides by component (growth, load_factor, pax_per_runway, "
-            "demand_gap, scale, peak). Weights are rescaled to sum to 1."
+            'demand_gap, scale, peak), for example {"growth": 0.6}. Each named component gets '
+            "exactly that weight; the other components share the rest in proportion to their "
+            "default weights. Never compute weights yourself: pass only what the user asked for "
+            "and read the weights actually used from weights_used in the result."
         ),
     )
 

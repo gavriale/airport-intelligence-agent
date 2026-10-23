@@ -11,6 +11,7 @@ from adapters.snapshot_files import (
     read_records,
 )
 from domain.repository import Airport, MonthlyTraffic, SnapshotInfo
+from domain.runways import is_commercial_capable
 
 
 class MemoryRepository:
@@ -18,11 +19,11 @@ class MemoryRepository:
     Docker. It follows the same contract as `PostgresRepository` (the tests run both)."""
 
     def __init__(self, snapshot_dir: Path) -> None:
-        runways: dict[str, list[int | None]] = defaultdict(list)
-        for iata, _runway, length_ft, *_ in read_records(
+        runways: dict[str, list[tuple[int | None, bool]]] = defaultdict(list)
+        for iata, _runway, length_ft, _width, surface, _lighted in read_records(
             snapshot_dir / "runways.csv", RUNWAY_COLUMNS
         ):
-            runways[iata].append(length_ft)
+            runways[iata].append((length_ft, is_commercial_capable(length_ft, surface)))
 
         self._traffic: dict[str, list[MonthlyTraffic]] = defaultdict(list)
         for record in read_records(snapshot_dir / "airport_month.csv", TRAFFIC_COLUMNS):
@@ -34,11 +35,13 @@ class MemoryRepository:
         self._airports: list[Airport] = []
         for record in read_records(snapshot_dir / "airports.csv", AIRPORT_COLUMNS):
             fields = dict(zip(AIRPORT_COLUMNS, record, strict=True))
-            lengths = [n for n in runways[fields["iata"]] if n is not None]
+            own = runways[fields["iata"]]
+            lengths = [length for length, _ in own if length is not None]
             self._airports.append(
                 Airport(
                     **fields,
-                    runway_count=len(runways[fields["iata"]]),
+                    runway_count=len(own),
+                    commercial_runway_count=sum(1 for _, commercial in own if commercial),
                     longest_runway_ft=max(lengths) if lengths else None,
                     has_traffic=fields["iata"] in self._traffic,
                 )

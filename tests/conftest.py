@@ -111,8 +111,11 @@ class FakeLiveStatus:
     async def get_status(self) -> LiveStatus:
         if self._fail:
             raise LiveStatusUnavailable("FAA feed unreachable")
-        event = LiveEvent(kind="Ground Delay Programs", details={"Reason": "rain", "Avg": "1 hour"})
-        return LiveStatus(updated="Fri Oct 23 06:42:01 2026 GMT", events={"LAX": [event]})
+        delay = LiveEvent(kind="Ground Delay Programs", details={"Reason": "rain", "Avg": "1 hour"})
+        notice = LiveEvent(kind="Airport Closures", details={"Reason": "!BOS AD AP CLSD TO GA"})
+        return LiveStatus(
+            updated="Fri Oct 23 06:42:01 2026 GMT", events={"LAX": [delay], "BOS": [notice]}
+        )
 
 
 @pytest.fixture(scope="session")

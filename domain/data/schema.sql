@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS runways (
     surface      TEXT,
     lighted      BOOLEAN NOT NULL
 );
+-- Added after the first release; the ALTER keeps databases created earlier working.
+ALTER TABLE runways ADD COLUMN IF NOT EXISTS commercial_capable BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_runways_airport ON runways (airport_iata);
 
 -- BTS T-100 summary by origin airport, monthly, peer airports only.

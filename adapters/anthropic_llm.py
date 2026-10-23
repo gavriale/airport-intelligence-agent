@@ -1,10 +1,12 @@
+import logging
+
 import anthropic
 
 from core.errors import LLMError
 from core.interfaces import LLMResponse, Message, ToolCall, ToolSpec
 from core.logging import log_event
 
-MAX_OUTPUT_TOKENS = 1024
+MAX_OUTPUT_TOKENS = 2048
 
 
 class AnthropicLLM:
@@ -42,7 +44,15 @@ class AnthropicLLM:
             cache_write_tokens=usage.cache_creation_input_tokens or 0,
             cache_read_tokens=usage.cache_read_input_tokens or 0,
             output_tokens=usage.output_tokens,
+            stop_reason=response.stop_reason,
         )
+        if response.stop_reason == "max_tokens":
+            log_event(
+                "llm_truncated",
+                logging.WARNING,
+                output_tokens=usage.output_tokens,
+                limit=MAX_OUTPUT_TOKENS,
+            )
         return LLMResponse(
             text="".join(b.text for b in response.content if b.type == "text"),
             tool_calls=[

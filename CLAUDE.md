@@ -101,7 +101,7 @@ Expansion Pressure Score, 0 to 100: weighted sum of percentile ranks computed **
 |---|---|---|
 | Growth | passengers, last 12 months vs the 12 months before | 0.25 |
 | Load factor | passengers / seats, last 12 months | 0.25 |
-| Passengers per runway | last 12 months passengers / runway count | 0.20 |
+| Passengers per runway | last 12 months passengers / commercial runway count (open, paved, at least 5,000 ft) | 0.20 |
 | Demand gap | passenger growth minus seat growth | 0.15 |
 | Scale | log of last 12 months passengers | 0.10 |
 | Peak ratio | peak month passengers / average month | 0.05 |

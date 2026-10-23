@@ -77,9 +77,10 @@ async def test_compare_lax_and_sna_reports_utilization_and_who_is_highest(analyt
 
     lax, sna = result["airports"]
     assert (lax["iata"], sna["iata"]) == ("LAX", "SNA")
-    assert lax["runway_count"] > sna["runway_count"] >= 1
-    assert result["highest_by_metric"]["departures_per_runway_per_day"] == "LAX"
-    assert result["highest_by_metric"]["passengers_per_runway_per_day"] == "LAX"
+    assert lax["runways"]["commercial"] > sna["runways"]["commercial"] >= 1
+    comparison = result["comparison_by_metric"]
+    assert comparison["departures_per_commercial_runway_per_day"]["highest"] == "LAX"
+    assert comparison["passengers_per_commercial_runway_per_day"]["highest"] == "LAX"
     assert any("No delay history" in c for c in result["caveats"])
     assert any("all-cargo" in c for c in result["caveats"])
 
@@ -165,12 +166,20 @@ async def test_live_status_distinguishes_active_programs_from_none_reported(anal
     delayed = await analytics.live("LAX")
     quiet = await analytics.live("SFO")
 
-    assert delayed["live_status"] == "active_programs"
+    assert delayed["live_status"] == "delay_programs"
     assert delayed["events"][0]["kind"] == "Ground Delay Programs"
     assert quiet["live_status"] == "no_reported_programs"
     assert quiet["events"] == []
     assert "FAA feed updated" in quiet["as_of"]
     assert any("not missing data" in c for c in quiet["caveats"])
+
+
+async def test_a_closure_notice_alone_is_not_reported_as_a_delay_program(analytics):
+    result = await analytics.live("BOS")
+
+    assert result["live_status"] == "closure_notices_only"
+    assert result["events"][0]["kind"] == "Airport Closures"
+    assert any("no delay program" in c for c in result["caveats"])
 
 
 async def test_live_status_failure_is_a_clean_tool_error(memory_repo):

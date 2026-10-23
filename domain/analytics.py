@@ -15,6 +15,7 @@ from domain.config import Config
 from domain.live_status import LiveStatusProvider, LiveStatusUnavailable
 from domain.metrics import demand_signals, distance_profile
 from domain.repository import Airport, AirportRepository, MonthlyTraffic, SnapshotInfo
+from domain.runways import RULE_TEXT
 from domain.scoring import (
     COMPONENTS,
     Kpis,
@@ -33,6 +34,15 @@ from domain.search import search_airports
 
 DAYS_PER_YEAR = 365
 MAX_COMPARE = 5
+CLOSURE_KIND = "Airport Closures"  # the FAA feed's name for closure notices
+RATIO_METRICS = (
+    "passengers",
+    "departures_per_commercial_runway_per_day",
+    "passengers_per_commercial_runway_per_day",
+    "load_factor_pct",
+    "peak_month_ratio",
+)
+DIFFERENCE_METRICS = ("passenger_growth_pct", "seat_growth_pct", "demand_gap_pts")
 
 
 def _round(value: float | None, digits: int = 1) -> float | None:
@@ -141,22 +151,26 @@ class Analytics:
 
     @staticmethod
     def _kpi_summary(k: Kpis) -> dict:
-        runway_days = DAYS_PER_YEAR * k.runway_count if k.runway_count else None
+        runway_days = (
+            DAYS_PER_YEAR * k.commercial_runway_count if k.commercial_runway_count else None
+        )
         return {
             "passengers": k.passengers,
             "departures": k.departures,
+            "passengers_added": k.passengers_added,
             "passenger_growth_pct": _round(k.passenger_growth_pct),
             "seat_growth_pct": _round(k.seat_growth_pct),
             "demand_gap_pts": _round(k.demand_gap_pts),
             "load_factor_pct": _round(k.load_factor_pct),
             "runway_count": k.runway_count,
-            "passengers_per_runway": _round(k.passengers_per_runway, 0),
-            "passengers_per_runway_per_day": (
+            "commercial_runway_count": k.commercial_runway_count,
+            "passengers_per_commercial_runway": _round(k.passengers_per_runway, 0),
+            "passengers_per_commercial_runway_per_day": (
                 _round(k.passengers / runway_days, 0)
                 if k.passengers is not None and runway_days
                 else None
             ),
-            "departures_per_runway_per_day": (
+            "departures_per_commercial_runway_per_day": (
                 _round(k.departures / runway_days, 1)
                 if k.departures is not None and runway_days
                 else None
@@ -164,6 +178,48 @@ class Analytics:
             "peak_month_ratio": _round(k.peak_month_ratio, 2),
             "data_flags": k.flags,
         }
+
+    @staticmethod
+    def _live_label(events: Sequence[dict]) -> str:
+        """Closure entries are NOTAM text (many only restrict general aviation), so an airport
+        with only closure entries is not reported as having a delay program."""
+        if not events:
+            return "no_reported_programs"
+        if any(e["kind"] != CLOSURE_KIND for e in events):
+            return "delay_programs"
+        return "closure_notices_only"
+
+    @staticmethod
+    def _runways(a: Airport) -> dict:
+        return {
+            "total": a.runway_count,
+            "commercial": a.commercial_runway_count,
+            "commercial_means": RULE_TEXT,
+            "longest_ft": a.longest_runway_ft,
+        }
+
+    @staticmethod
+    def _comparison(comparable: Mapping[str, dict]) -> dict:
+        """Which airport is highest and lowest on each measure, and by how much. The ratio is
+        highest divided by lowest (only for measures where a ratio is meaningful)."""
+        out: dict[str, dict | None] = {}
+        for metric in (*RATIO_METRICS, *DIFFERENCE_METRICS):
+            values = {c: v[metric] for c, v in comparable.items() if v[metric] is not None}
+            if len(values) < 2:
+                out[metric] = None
+                continue
+            high, low = max(values.values()), min(values.values())
+            highest = [c for c, v in values.items() if v == high]
+            lowest = [c for c, v in values.items() if v == low]
+            entry = {
+                "highest": highest[0] if len(highest) == 1 else "tie",
+                "lowest": lowest[0] if len(lowest) == 1 else "tie",
+                "difference": _round(high - low, 2),
+            }
+            if metric in RATIO_METRICS and low > 0:
+                entry["ratio_highest_to_lowest"] = _round(high / low, 2)
+            out[metric] = entry
+        return out
 
     @staticmethod
     def _components_out(components: Mapping, weights: Mapping[str, float]) -> dict:
@@ -206,8 +262,7 @@ class Analytics:
             "latitude": airport.latitude,
             "longitude": airport.longitude,
             "elevation_ft": airport.elevation_ft,
-            "runway_count": airport.runway_count,
-            "longest_runway_ft": airport.longest_runway_ft,
+            "runways": self._runways(airport),
             "scheduled_service": airport.scheduled_service,
         }
         if airport.iata not in snap.airports:
@@ -262,6 +317,8 @@ class Analytics:
                 "score": _round(r.score),
                 **self._airport_summary(snap.airports[r.iata]),
                 "passengers": snap.kpis[r.iata].passengers,
+                "passengers_added": snap.kpis[r.iata].passengers_added,
+                "passenger_growth_pct": _round(snap.kpis[r.iata].passenger_growth_pct),
                 "components": self._components_out(snap.national.components[r.iata], weights),
             }
             for r in ranking[:top_n]
@@ -298,26 +355,15 @@ class Analytics:
             rows.append(
                 {
                     **self._airport_summary(airport),
-                    "longest_runway_ft": airport.longest_runway_ft,
+                    "runways": self._runways(airport),
                     **self._kpi_summary(kpis),
                     "score": _round(weighted_score(scored, weights)) if scored else None,
                 }
             )
             comparable[code] = self._kpi_summary(kpis)
-        leaders = {}
-        for metric in (
-            "departures_per_runway_per_day",
-            "passengers_per_runway_per_day",
-            "load_factor_pct",
-            "peak_month_ratio",
-        ):
-            values = {c: v[metric] for c, v in comparable.items() if v[metric] is not None}
-            best = max(values.values(), default=None)
-            top = [c for c, v in values.items() if v == best]
-            leaders[metric] = top[0] if len(top) == 1 else ("tie" if top else None)
         return self._envelope(
             snap,
-            {"airports": rows, "highest_by_metric": leaders},
+            {"airports": rows, "comparison_by_metric": self._comparison(comparable)},
             ["data", "congestion", "cargo", "score"],
         )
 
@@ -424,7 +470,7 @@ class Analytics:
         return {
             "as_of": f"FAA feed updated {status.updated}",
             **self._airport_summary(airport),
-            "live_status": "active_programs" if events else "no_reported_programs",
+            "live_status": self._live_label(events),
             "events": events,
             "caveats": self._caveats(snap, ["live"]),
         }
@@ -449,7 +495,7 @@ class Analytics:
                     f"{scoring.window_months} months before"
                 ),
                 "not_scored": (
-                    "An airport with a missing month in either window, no runway data, or no "
+                    "An airport with a missing month in either window, no commercial runway, or no "
                     "seats cannot have all components computed. It is listed as not scored with "
                     "the reasons; it is never scored on partial data."
                 ),
@@ -457,8 +503,8 @@ class Analytics:
         if topic in ("metrics", "all"):
             parts["metrics"] = [m.model_dump() for m in self._config.metrics]
             parts["utilization_per_day"] = (
-                "Departures or passengers per runway per day = last-12-months total / open "
-                f"runways / {DAYS_PER_YEAR}."
+                "Departures or passengers per commercial runway per day = last-12-months total "
+                f"/ commercial runways / {DAYS_PER_YEAR}. A commercial runway is {RULE_TEXT}."
             )
         if topic in ("limits", "all"):
             parts["limits"] = {

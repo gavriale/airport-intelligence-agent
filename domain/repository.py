@@ -18,7 +18,8 @@ class Airport(BaseModel):
     elevation_ft: int | None
     type: str
     scheduled_service: bool
-    runway_count: int
+    runway_count: int  # every open runway
+    commercial_runway_count: int  # open, paved, at least 5,000 ft: used for per-runway metrics
     longest_runway_ft: int | None
     has_traffic: bool  # True for peer airports: only they have monthly traffic rows
 

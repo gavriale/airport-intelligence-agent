@@ -49,10 +49,11 @@ WEIGHTS = {
 }
 
 
-def airport(iata: str, runways: int = 1) -> Airport:
+def airport(iata: str, runways: int = 1, commercial: int | None = None) -> Airport:
     return Airport(
         iata=iata, ident="K" + iata, name=iata, city=iata, state="MA", latitude=0, longitude=0,
         elevation_ft=0, type="large_airport", scheduled_service=True, runway_count=runways,
+        commercial_runway_count=commercial if commercial is not None else runways,
         longest_runway_ft=9000 if runways else None, has_traffic=True,
     )  # fmt: skip
 
@@ -210,22 +211,67 @@ def test_airport_with_no_seats_at_all_has_no_load_factor_and_is_not_scored():
     assert "load_factor unavailable" in build_national_scores([f]).not_scored["F"]
 
 
-def test_airport_without_runway_data_has_no_per_runway_metric():
-    g = kpis_for("G", 0, (100, 150), (120, 150))
+def test_airport_without_a_commercial_runway_has_no_per_runway_metric():
+    g = compute_kpis(
+        airport("G", runways=2, commercial=0), series("G", (100, 150), (120, 150)), WINDOWS
+    )
 
     assert g.passengers_per_runway is None
-    assert "no_runway_data" in g.flags
+    assert "no_commercial_runway" in g.flags
     assert "G" not in build_national_scores([g]).components
 
 
-def test_normalize_weights_rescales_overrides_to_sum_to_one():
-    weights = normalize_weights(WEIGHTS, {"growth": 0.5})
+def test_per_runway_metrics_count_only_commercial_runways():
+    rows = series("H", (100, 150), (120, 150))  # 1,440 passengers in the last 12 months
 
+    h = compute_kpis(airport("H", runways=2, commercial=1), rows, WINDOWS)
+
+    assert h.runway_count == 2
+    assert h.commercial_runway_count == 1
+    assert h.passengers_per_runway == pytest.approx(1440)  # not 720
+
+
+def test_passengers_added_is_the_absolute_change_and_missing_when_growth_is():
+    a = kpis_for("A", 2, (100, 150), (120, 150))
+    d = kpis_for("D", 1, (100, 150), (120, 150), skip={WINDOWS.prior[0]})
+
+    assert a.passengers_added == 1440 - 1200
+    assert d.passengers_added is None
+
+
+def test_a_partial_override_is_exact_and_the_others_share_the_rest_in_proportion():
+    weights = normalize_weights(WEIGHTS, {"growth": 0.6})
+
+    assert weights["growth"] == pytest.approx(0.6)  # exactly what was asked
     assert sum(weights.values()) == pytest.approx(1)
-    assert weights["growth"] == pytest.approx(0.5 / 1.25)
+    # The other five share 0.4 in the ratio of their defaults (they sum to 0.75).
+    assert weights["load_factor"] == pytest.approx(0.25 / 0.75 * 0.4)
+    assert weights["peak"] == pytest.approx(0.05 / 0.75 * 0.4)
 
 
-@pytest.mark.parametrize("bad", [{"nope": 1.0}, {"growth": -1.0}])
-def test_normalize_weights_rejects_unknown_or_negative(bad):
+def test_two_overrides_leave_the_rest_to_the_others():
+    weights = normalize_weights(WEIGHTS, {"growth": 0.5, "scale": 0.3})
+
+    assert (weights["growth"], weights["scale"]) == (0.5, 0.3)
+    assert sum(weights.values()) == pytest.approx(1)
+    assert weights["load_factor"] == pytest.approx(0.25 / 0.65 * 0.2)  # 0.65 = 1 - 0.25 - 0.10
+
+
+def test_without_overrides_the_default_weights_are_returned():
+    assert normalize_weights(WEIGHTS, None) == pytest.approx(WEIGHTS)
+
+
+def test_setting_every_weight_requires_them_to_add_up_to_one():
+    everything = {c: 1 / 6 for c in COMPONENTS}
+
+    assert normalize_weights(WEIGHTS, everything) == pytest.approx(everything)
+    with pytest.raises(ValueError, match="add up to 1"):
+        normalize_weights(WEIGHTS, {c: 0.1 for c in COMPONENTS})  # adds up to 0.6
+
+
+@pytest.mark.parametrize(
+    "bad", [{"nope": 1.0}, {"growth": -0.1}, {"growth": 1.5}, {"growth": 0.7, "scale": 0.7}]
+)
+def test_normalize_weights_rejects_unknown_negative_or_too_large(bad):
     with pytest.raises(ValueError):
         normalize_weights(WEIGHTS, bad)

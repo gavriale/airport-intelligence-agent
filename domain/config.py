@@ -5,9 +5,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, model_validator
 
-from domain.scoring import COMPONENTS
-
-WEIGHT_TOLERANCE = 1e-6
+from domain.scoring import COMPONENTS, WEIGHT_TOLERANCE
 
 
 class ScoringConfig(BaseModel):

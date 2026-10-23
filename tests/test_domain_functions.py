@@ -18,7 +18,7 @@ def airport(iata, city, name, *, type="large_airport", traffic=True):
     return Airport(
         iata=iata, ident="K" + iata, name=name, city=city, state="CA", latitude=0, longitude=0,
         elevation_ft=0, type=type, scheduled_service=True, runway_count=1,
-        longest_runway_ft=8000, has_traffic=traffic,
+        commercial_runway_count=1, longest_runway_ft=8000, has_traffic=traffic,
     )  # fmt: skip
 
 

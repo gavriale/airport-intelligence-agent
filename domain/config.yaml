@@ -33,7 +33,7 @@ metrics:
     definition: Passengers divided by seats over the last 12 months, in percent. Months with no seats are left out, not counted as zero.
   - key: pax_per_runway
     label: Passengers per runway
-    definition: Passengers in the last 12 months divided by the number of open runways. A rough capacity-pressure proxy.
+    definition: Passengers in the last 12 months divided by the number of commercial runways (open, paved, at least 5,000 ft). A rough capacity-pressure proxy.
   - key: demand_gap
     label: Demand gap
     definition: Passenger growth minus seat growth, in percentage points. Positive means passengers grew faster than airlines added seats.
@@ -50,7 +50,7 @@ caveats:
     - "Source: BTS T-100 monthly data, counted by origin airport. The latest month is {as_of}, so the data is about six months old."
   score:
     - "The score measures demand pressure (growth, utilization, load), not physical terminal capacity. No terminal, gate or construction data is available."
-    - "Runway count is only a rough capacity proxy. It counts every open runway, including short general-aviation runways."
+    - "Per-runway metrics count only commercial runways (open, paved, at least 5,000 ft long); short and unpaved runways are left out. Runway count is still only a rough capacity proxy."
     - "The weights are judgmental and configurable. 'Profitable' is not measured."
   congestion:
     - "Congestion here means how heavily runways and seats are used. No delay history is available; FAA live status is a snapshot, not a trend."
@@ -65,6 +65,6 @@ caveats:
     - "International departures from this airport average {seats:.1f} seats per flight, so they are mostly all-cargo flights. The international share and the average distance describe cargo as much as passenger service."
   live:
     - "The FAA lists only airports with an active delay program or closure. Not being listed means no reported delay, not missing data."
-    - "Closure entries are NOTAM text and may apply to only some aircraft (for example general aviation). Read the reason."
+    - "Closure entries are NOTAM text and may apply to only some aircraft (for example general aviation). Read the reason. Their dates leave out the year, so a closure can last much longer than the dates suggest. An airport with only closure entries has no delay program."
   not_peer:
     - "{iata} is not in the peer set (fewer than {minimum:,} passengers in the last 12 months), so there is no traffic analysis for it."

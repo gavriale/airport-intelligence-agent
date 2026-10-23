@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from core.tools import ToolRegistry
 from domain.tools import build_tools
 from tests.conftest import call
@@ -43,7 +45,8 @@ async def test_rank_airports_accepts_partial_weights(analytics):
     )
 
     assert not result.is_error
-    assert body["weights_used"]["growth"] > 0.25
+    assert body["weights_used"]["growth"] == 0.6
+    assert sum(body["weights_used"].values()) == pytest.approx(1, abs=0.002)
 
 
 async def test_bad_arguments_are_rejected_before_any_analysis(analytics):

@@ -55,6 +55,7 @@ async def test_airports_come_with_runway_counts_and_traffic_flag(repo):
     assert (anc.state, sfo.state) == ("AK", "CA")
     assert anc.runway_count >= 1
     assert sfo.runway_count >= 2
+    assert 1 <= sfo.commercial_runway_count <= sfo.runway_count
     assert sfo.longest_runway_ft and sfo.longest_runway_ft > 10_000
     assert anc.has_traffic and sfo.has_traffic
 
@@ -67,6 +68,13 @@ async def test_filtering_by_state_and_peers_only(repo):
     assert {"BOS", "BDL", "PVD"} <= {a.iata for a in peers}
     assert len(peers) < len(everything)  # small fields without traffic data are excluded
     assert all(a.has_traffic for a in peers)
+
+
+async def test_commercial_runways_exclude_short_strips(repo):
+    bos, sna = await repo.list_airports(iatas=["SNA", "BOS"])  # ordered by code
+
+    assert (sna.runway_count, sna.commercial_runway_count) == (2, 1)  # 2,886 ft strip left out
+    assert bos.commercial_runway_count < bos.runway_count  # 2,557 ft strip left out
 
 
 async def test_airports_are_ordered_by_code(repo):

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from domain.repository import Airport, MonthlyTraffic
 
 COMPONENTS = ("growth", "load_factor", "pax_per_runway", "demand_gap", "scale", "peak")
+WEIGHT_TOLERANCE = 1e-6
 
 
 @dataclass(frozen=True)
@@ -48,11 +49,13 @@ class Kpis(BaseModel):
     """KPIs of one airport. None means the value could not be computed; `flags` say why."""
 
     iata: str
-    runway_count: int
+    runway_count: int  # every open runway
+    commercial_runway_count: int  # open, paved, >= 5,000 ft; used for per-runway metrics
     passengers: int | None  # last 12 months; None if any month is missing
     seats: int | None
     departures: int | None
     prior_passengers: int | None
+    passengers_added: int | None  # last 12 months minus the 12 before; display only
     passenger_growth_pct: float | None
     seat_growth_pct: float | None
     demand_gap_pts: float | None
@@ -85,8 +88,8 @@ def compute_kpis(airport: Airport, rows: Sequence[MonthlyTraffic], windows: Wind
         flags.append(f"missing_months_current:{len(windows.current) - len(current)}")
     if not prior_complete:
         flags.append(f"missing_months_prior:{len(windows.prior) - len(prior)}")
-    if airport.runway_count == 0:
-        flags.append("no_runway_data")
+    if airport.commercial_runway_count == 0:
+        flags.append("no_commercial_runway")
 
     passengers = sum(r.passengers for r in current) if current_complete else None
     seats = sum(r.seats for r in current) if current_complete else None
@@ -107,8 +110,8 @@ def compute_kpis(airport: Airport, rows: Sequence[MonthlyTraffic], windows: Wind
     )
 
     per_runway = (
-        passengers / airport.runway_count
-        if passengers is not None and airport.runway_count > 0
+        passengers / airport.commercial_runway_count
+        if passengers is not None and airport.commercial_runway_count > 0
         else None
     )
     peak = (
@@ -119,10 +122,16 @@ def compute_kpis(airport: Airport, rows: Sequence[MonthlyTraffic], windows: Wind
     return Kpis(
         iata=airport.iata,
         runway_count=airport.runway_count,
+        commercial_runway_count=airport.commercial_runway_count,
         passengers=passengers,
         seats=seats,
         departures=sum(r.departures for r in current) if current_complete else None,
         prior_passengers=prior_passengers,
+        passengers_added=(
+            passengers - prior_passengers
+            if passengers is not None and prior_passengers is not None
+            else None
+        ),
         passenger_growth_pct=growth,
         seat_growth_pct=seat_growth,
         demand_gap_pts=gap,
@@ -186,15 +195,31 @@ def build_national_scores(all_kpis: Sequence[Kpis]) -> NationalScores:
 
 
 def normalize_weights(base: Mapping[str, float], overrides: Mapping[str, float] | None) -> dict:
-    """Apply overrides to the base weights and scale so they sum to 1."""
-    merged = {**base, **(overrides or {})}
-    unknown = set(merged) - set(COMPONENTS)
+    """Weights to use. An overridden component gets exactly the value given; the components
+    that were not overridden share what is left, in proportion to their base weights.
+
+    Example: {"growth": 0.6} gives growth 0.6 and splits the remaining 0.4 among the others in
+    the ratio of their base weights. If every component is overridden, they must sum to 1."""
+    overrides = dict(overrides or {})
+    unknown = set(overrides) - set(COMPONENTS)
     if unknown:
         raise ValueError(f"unknown weight(s): {sorted(unknown)}; valid: {list(COMPONENTS)}")
-    if any(w < 0 for w in merged.values()) or sum(merged.values()) <= 0:
-        raise ValueError("weights must be non-negative and not all zero")
-    total = sum(merged.values())
-    return {c: merged[c] / total for c in COMPONENTS}
+    if any(w < 0 or w > 1 for w in overrides.values()):
+        raise ValueError("each weight must be between 0 and 1")
+    fixed = sum(overrides.values())
+    if fixed > 1 + WEIGHT_TOLERANCE:
+        raise ValueError(f"the weights you set add up to {fixed:g}, which is more than 1")
+
+    free = [c for c in COMPONENTS if c not in overrides]
+    if not free:
+        if abs(fixed - 1) > WEIGHT_TOLERANCE:
+            raise ValueError(f"when every weight is set they must add up to 1, not {fixed:g}")
+        return {c: overrides[c] for c in COMPONENTS}
+    base_total = sum(base[c] for c in free)
+    remaining = 1 - fixed
+    return {
+        c: overrides[c] if c in overrides else base[c] / base_total * remaining for c in COMPONENTS
+    }
 
 
 def weighted_score(components: Mapping[str, Component], weights: Mapping[str, float]) -> float:

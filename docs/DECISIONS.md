@@ -60,6 +60,37 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 - **Why:** Scoring on partial data would put a number in front of an analyst that looks as solid as the others. With the current snapshot all 228 peers are scorable, so the exclusion rules are covered by unit tests on hand-made data, not by real airports.
 - **Tradeoff / when I'd change it:** A seasonal airport with one missing month drops out entirely. A later version could score on the available components and flag it, but that needs a documented rule for rescaling the weights.
 
+## Peak-month ratio counts as positive (weight 0.05)
+- **Chosen:** A higher peak-month ratio (busiest month divided by the average month) raises the score. The weight is the smallest of the six, 0.05.
+- **Why:** Terminals and gates are sized for peak demand, not average demand. An airport that is badly overloaded for a few months is the one that feels the capacity limit and has a case for expansion, even if the rest of the year looks fine.
+- **Counter-argument:** Strong seasonality can hurt the investment case. A terminal sized for a short peak sits underused for most of the year, so revenue per square foot is lower and returns are weaker. Read that way, a high peak ratio should lower the score, or at least not raise it.
+- **How much it matters (checked on the snapshot):** If the sign were reversed, the national top 20 changes in 4 airports (16 of 20 stay) and the national top five changes noticeably. In New England the top two (Bangor, Portland) stay the same, and third place moves from Burlington to Boston. So the choice is not decisive for the region, but it can matter nationally.
+- **Tradeoff / when I'd change it:** The weight is low on purpose because the sign is arguable. The weights are configurable, so an analyst who disagrees can set it to zero (`{"peak": 0}`). A better version would separate short peaks from year-round pressure instead of using one ratio.
+
+## Per-runway metrics count commercial runways only
+- **Chosen:** A runway counts if it is open, paved and at least 5,000 ft long. Profiles and comparisons report both the total and the commercial count. The rule is one small function (`domain/runways.py`); the repositories compute the count from the surface and length in the snapshot.
+- **Why:** Short strips and unpaved or water runways do not carry airline traffic. Counting them made airports with a small general-aviation strip look less busy per runway. Santa Ana (SNA) has two runways but one is a 2,886 ft strip, so it now counts as one commercial runway, and its passengers per runway doubled. Boston counts 5 of 6.
+- **Alternatives considered:** Counting all runways (as before, penalises airports with small side strips); weighting runways by length (more precise, harder to explain).
+- **Tradeoff / when I'd change it:** The 5,000 ft threshold is a simple rule of thumb, not a certification. A regional jet can use less, a wide-body needs more. Surface codes in OurAirports vary, so paved is detected by their first letters (asphalt, concrete, permanent). Changing the rule reloads the Postgres data automatically because the rule is part of the snapshot hash.
+
+## Weight overrides are exact, and the code does the arithmetic
+- **Chosen:** In `rank_airports`, a component named in `weights` gets exactly that weight (`{"growth": 0.6}` means 0.6) and the others share the rest in proportion to their default weights. The weights actually used come back in `weights_used`. Setting every weight is allowed only if they add up to 1; unknown names, negatives or a total above 1 are errors.
+- **Why:** In the first demo the model rescaled the weights itself, which broke the rule that numbers come from code. This way the model passes only what the user asked for and quotes what the code reports.
+- **Tradeoff / when I'd change it:** Percentiles are not recomputed, only the weighting, so the effect of a re-weighting is easy to explain.
+
+## Passengers added shown next to growth, outside the score
+- **Chosen:** Rankings, comparisons and profiles show the absolute change in passengers (last 12 months minus the 12 before) next to the growth percentage. It is display only.
+- **Why:** A small airport can show a large percentage on a few thousand passengers, and a large airport a small percentage on millions. Seeing both stops an analyst from misreading either. It is not in the score because scale and growth are already scored, and adding it would count the same effect twice.
+
+## FAA closure notices are not delay programs
+- **Chosen:** `get_live_status` reports `delay_programs`, `closure_notices_only` or `no_reported_programs`.
+- **Why:** The first real call to the feed returned only closure entries, including a LAX notice that restricts non-scheduled general-aviation traffic. Calling that "active programs" would suggest airline delays at LAX. The dates in these entries also leave out the year.
+- **Tradeoff / when I'd change it:** The label does not decode the NOTAM text, so the reason is passed through for the reader. Decoding NOTAMs reliably is a larger job.
+
+## Output token limit raised, and truncation is logged
+- **Chosen:** The model call allows 2,048 output tokens (was 1,024), and a reply that stops because of the limit logs an `llm_truncated` warning. Every model call also logs its stop reason.
+- **Why:** A long answer cut off in the middle would look like a finished one. The earlier follow-up answer used 1,003 output tokens in total across its two model calls, so it was under the old limit and was not cut off; but it was close enough to justify more room and a visible warning.
+
 ## One analytics layer behind the tools and the API
 - **Chosen:** `domain/analytics.py` holds every analysis and returns plain dictionaries with `as_of`, the data window and caveats. The tools are thin wrappers that validate arguments. `GET /ranking` calls the same code with no model. The national KPI table is computed once and cached.
 - **Why:** The same numbers appear whether they come from the chat or the endpoint, and a reviewer without an API key can still see the deterministic ranking. Caveat texts live in one config file instead of being scattered through code.

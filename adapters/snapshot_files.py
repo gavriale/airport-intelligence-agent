@@ -58,8 +58,10 @@ def read_meta(snapshot_dir: Path) -> dict[str, Any]:
     return json.loads((snapshot_dir / "snapshot_meta.json").read_text(encoding="utf-8"))
 
 
-def snapshot_hash(snapshot_dir: Path) -> str:
-    digest = hashlib.sha256()
+def snapshot_hash(snapshot_dir: Path, extra: bytes = b"") -> str:
+    """Hash of the snapshot files plus `extra` (what else decides the loaded data: the schema and
+    the runway rule), so changing those reloads the data too."""
+    digest = hashlib.sha256(extra)
     for name in SNAPSHOT_FILES:
         digest.update(name.encode())
         # Line endings are normalised so the hash is the same on Windows and Linux checkouts.

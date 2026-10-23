@@ -14,6 +14,7 @@ from adapters.snapshot_files import (
     snapshot_hash,
 )
 from domain.repository import Airport, MonthlyTraffic, SnapshotInfo
+from domain.runways import RULE_TEXT, is_commercial_capable
 
 LOAD_LOCK_ID = 42  # serializes loaders when several API replicas start together
 
@@ -21,11 +22,14 @@ _AIRPORTS_SQL = """
 SELECT a.iata, a.ident, a.name, a.city, a.state, a.latitude, a.longitude, a.elevation_ft,
        a.type, a.scheduled_service,
        COALESCE(r.runway_count, 0) AS runway_count,
+       COALESCE(r.commercial_runway_count, 0) AS commercial_runway_count,
        r.longest_runway_ft,
        EXISTS (SELECT 1 FROM airport_month m WHERE m.iata = a.iata) AS has_traffic
 FROM airports a
 LEFT JOIN (
-    SELECT airport_iata, COUNT(*) AS runway_count, MAX(length_ft) AS longest_runway_ft
+    SELECT airport_iata, COUNT(*) AS runway_count,
+           COUNT(*) FILTER (WHERE commercial_capable) AS commercial_runway_count,
+           MAX(length_ft) AS longest_runway_ft
     FROM runways GROUP BY airport_iata
 ) r ON r.airport_iata = a.iata
 WHERE ($1::text[] IS NULL OR a.state = ANY($1))
@@ -63,17 +67,18 @@ class PostgresRepository:
         Idempotent: a snapshot that is already loaded (same hash) is skipped. The replacement
         runs in one transaction, so readers see the old data until the new data is complete.
         Returns True if data was loaded."""
-        digest = snapshot_hash(snapshot_dir)
+        schema_sql = schema_path.read_text(encoding="utf-8")
+        digest = snapshot_hash(snapshot_dir, (schema_sql + RULE_TEXT).encode())
         async with self._pool.acquire() as conn, conn.transaction():
             await conn.execute("SELECT pg_advisory_xact_lock($1)", LOAD_LOCK_ID)
-            await conn.execute(schema_path.read_text(encoding="utf-8"))
+            await conn.execute(schema_sql)
             stored = await conn.fetchval("SELECT value FROM snapshot_meta WHERE key = 'hash'")
             if stored == digest:
                 return False
 
             await conn.execute("TRUNCATE airport_month, runways, airports")
             await _copy(conn, "airports", snapshot_dir / "airports.csv", AIRPORT_COLUMNS)
-            await _copy(conn, "runways", snapshot_dir / "runways.csv", RUNWAY_COLUMNS)
+            await _copy_runways(conn, snapshot_dir / "runways.csv")
             await _copy(conn, "airport_month", snapshot_dir / "airport_month.csv", TRAFFIC_COLUMNS)
             await _store_meta(conn, snapshot_dir, digest)
         return True
@@ -117,6 +122,17 @@ async def _copy(
 ) -> None:
     records = read_records(path, columns)
     await conn.copy_records_to_table(table, records=records, columns=list(columns))
+
+
+async def _copy_runways(conn: asyncpg.Connection, path: Path) -> None:
+    """Runways get one computed column: whether the runway counts for per-runway metrics."""
+    records = [
+        (*record, is_commercial_capable(record[2], record[4]))  # length_ft, surface
+        for record in read_records(path, RUNWAY_COLUMNS)
+    ]
+    await conn.copy_records_to_table(
+        "runways", records=records, columns=[*RUNWAY_COLUMNS, "commercial_capable"]
+    )
 
 
 async def _store_meta(conn: asyncpg.Connection, snapshot_dir: Path, digest: str) -> None:
