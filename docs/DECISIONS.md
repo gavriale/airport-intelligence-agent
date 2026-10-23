@@ -43,6 +43,11 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
   - **Cleanup:** old sessions are never deleted. Needs a job that removes rows past an age limit (an index on `updated_at`).
   - Data survives `docker compose down` because the Postgres data directory is the named volume `pgdata` (only `down -v` deletes it, and the sessions with it).
 
+## The chat page keeps its session id in `sessionStorage`
+- **Chosen:** The page stores `session_id` in `sessionStorage` and, on load, fetches `GET /sessions/{id}/messages` to redraw the conversation. That endpoint returns only the visible turns (user messages and final answers; tool requests, tool results and text that came with a tool request stay hidden). An unknown id is an empty list. The "New conversation" button clears the stored id and the screen.
+- **Why:** Without this a refresh dropped the id, so the next message started a new session and the screen was blank although the server had the history. `sessionStorage` survives a refresh but is cleared when the tab closes and is not shared between tabs, so the next person on a shared computer does not see the previous chat (`localStorage` would keep it).
+- **Tradeoff / when I'd change it:** **The session id is the only secret.** Anyone who holds it can read and continue that conversation; there is no login and sessions have no owner. Ids are random UUIDs, so they cannot be guessed, but production needs real authentication and per-user ownership of sessions (the id bound to a signed-in user, and a check on every read and write). The endpoint returns the whole visible history with no paging. On the in-memory store, a GET with an unknown id registers an empty session in the dictionary (Postgres writes nothing).
+
 ## Provider-neutral messages with tool blocks
 - **Chosen:** `Message` carries `tool_calls` and `tool_results`; only `adapters/anthropic_llm.py` knows the provider's block format.
 - **Why:** The loop and the sessions stay provider-independent, and the fake model can script tool calls.

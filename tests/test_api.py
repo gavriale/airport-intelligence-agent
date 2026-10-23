@@ -2,7 +2,8 @@ import httpx
 
 from api.main import create_app
 from app.container import Container
-from tests.conftest import say
+from core.interfaces import LLMResponse
+from tests.conftest import call, say, use
 
 
 async def _noop():
@@ -119,3 +120,67 @@ async def test_a_blank_api_key_builds_a_container_without_an_agent():
 
     assert container.agent is None
     assert (await container.analytics.rank("New England", None, 1, None))["ranking"]
+
+
+async def _client(r, analytics):
+    app = create_app(
+        Container(agent=r.agent, sessions=r.sessions, analytics=analytics, close=_noop)
+    )
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+
+
+async def test_session_messages_return_only_the_visible_turns(rig, analytics):
+    r = rig([use(call("add", a=2, b=3)), say("The sum is 5."), say("Still 5.")])
+    async with await _client(r, analytics) as client:
+        first = (await client.post("/chat", json={"message": "2+3?"})).json()
+        sid = first["session_id"]
+        await client.post("/chat", json={"session_id": sid, "message": "again?"})
+        history = await client.get(f"/sessions/{sid}/messages")
+
+    assert history.status_code == 200
+    assert history.json() == [
+        {"role": "user", "content": "2+3?"},
+        {"role": "assistant", "content": "The sum is 5."},
+        {"role": "user", "content": "again?"},
+        {"role": "assistant", "content": "Still 5."},
+    ]
+    # the stored session still holds the hidden tool messages
+    stored = await r.sessions.get_or_create(sid)
+    assert any(m.tool_calls for m in stored.messages) and any(
+        m.tool_results for m in stored.messages
+    )
+
+
+async def test_text_that_comes_with_a_tool_request_stays_hidden(rig, analytics):
+    r = rig(
+        [LLMResponse(text="Let me check.", tool_calls=[call("add", a=1, b=1)]), say("It is 2.")]
+    )
+    async with await _client(r, analytics) as client:
+        sid = (await client.post("/chat", json={"message": "1+1?"})).json()["session_id"]
+        history = (await client.get(f"/sessions/{sid}/messages")).json()
+
+    assert [m["content"] for m in history] == ["1+1?", "It is 2."]
+
+
+async def test_an_unknown_session_id_is_an_empty_list(rig, analytics):
+    async with await _client(rig([]), analytics) as client:
+        response = await client.get("/sessions/does-not-exist/messages")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+async def test_an_overlong_session_id_is_rejected(rig, analytics):
+    async with await _client(rig([]), analytics) as client:
+        response = await client.get(f"/sessions/{'x' * 65}/messages")
+
+    assert response.status_code == 422
+
+
+async def test_the_page_keeps_the_session_id_in_session_storage_not_local_storage(rig, analytics):
+    async with await _client(rig([]), analytics) as client:
+        page = (await client.get("/")).text
+
+    assert "sessionStorage" in page
+    assert "localStorage" not in page
+    assert "/sessions/" in page  # restores the history on load

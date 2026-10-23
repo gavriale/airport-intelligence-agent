@@ -40,7 +40,26 @@ const log = document.getElementById('log');
 const form = document.getElementById('form');
 const text = document.getElementById('text');
 const send = document.getElementById('send');
-let sessionId = null;
+// sessionStorage survives a refresh and is cleared when the tab closes (not shared between tabs).
+const SESSION_KEY = 'airport-chat-session-id';
+let sessionId = sessionStorage.getItem(SESSION_KEY);
+
+function rememberSession(id) {
+  sessionId = id;
+  if (id) sessionStorage.setItem(SESSION_KEY, id);
+  else sessionStorage.removeItem(SESSION_KEY);
+}
+
+async function restoreHistory() {
+  if (!sessionId) return;
+  try {
+    const response = await fetch('/sessions/' + encodeURIComponent(sessionId) + '/messages');
+    if (!response.ok) return;
+    for (const m of await response.json()) add(m.role === 'user' ? 'msg me' : 'msg bot', m.content);
+  } catch (err) {
+    // No history is not fatal: the page just starts empty and the next message continues the session.
+  }
+}
 
 function add(cls, content) {
   const el = document.createElement('div');
@@ -72,7 +91,7 @@ form.addEventListener('submit', async (event) => {
     });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     const data = await response.json();
-    sessionId = data.session_id;
+    rememberSession(data.session_id);
     pending.textContent = data.reply;
     if (data.failed) pending.classList.add('failed');
   } catch (err) {
@@ -84,10 +103,12 @@ form.addEventListener('submit', async (event) => {
 });
 
 document.getElementById('reset').addEventListener('click', () => {
-  sessionId = null;
+  rememberSession(null);
   log.innerHTML = '';
   text.focus();
 });
+
+restoreHistory();
 </script>
 </body>
 </html>

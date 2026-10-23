@@ -133,7 +133,7 @@ Each is one more snapshot column, one config entry and one more percentile in `d
 ## 10. Next steps and production (documented, not built)
 
 - **Data:** route-level and carrier data; monthly scheduled ingest with a diff report; delay history.
-- **Serving:** Redis with a TTL for live sessions and Postgres for transcripts and audit; a per-session lock or version column (today the last write wins); a cap or summary for long histories; cleanup of old sessions; auth and rate limits on `/chat`; MCP server for the tools.
+- **Serving:** Redis with a TTL for live sessions and Postgres for transcripts and audit; a per-session lock or version column (today the last write wins); a cap or summary for long histories; cleanup of old sessions; real authentication with per-user ownership of sessions (today the session id is the only secret, so anyone holding it can read that conversation) and rate limits on `/chat`; MCP server for the tools.
 - **Voice latency:** stream output, smaller routing model, filler phrase on slow tools (data in memory and parallel tools already done).
 - **Deployment:** containers, blue-green or canary, prompt+model+tools+config versioned as one release; rollback on eval pass rate, tool errors, p95 latency; `make eval` as CI gate.
 - **Observability:** structured logs with correlation ids exist; OpenTelemetry traces, dashboards, cost per conversation, alerts do not.
