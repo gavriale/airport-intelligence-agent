@@ -5,7 +5,8 @@ A number passes if it
   36,590,656; "96%" matches 95.6),
 - matches a number the user wrote, a number the model passed to a tool, or a number defined in
   `domain/config.yaml` (default weights, thresholds), or
-- is not a data number: a year, "12 months", a rank, a list or table index, or the 0 to 100 range.
+- is not a data number: a year, "12 months", a rank, a list or table index, the 0 to 100 range,
+  or part of a name ("Lower 48", "T-100", "Boeing 737").
 
 Anything else is reported. The audit cannot tell a number that is wrong from a number that
 happens to equal another value in the tool results, so it is a strong check, not a proof.
@@ -21,6 +22,9 @@ NUMBER = re.compile(
     re.IGNORECASE,
 )
 SCALES = {"k": 1e3, "thousand": 1e3, "m": 1e6, "million": 1e6, "b": 1e9, "bn": 1e9, "billion": 1e9}
+# Names that contain digits. They are blanked out before numbers are looked for, so "Lower 48",
+# "T-100" and "Boeing 737" are never read as data.
+NAMES = re.compile(r"\bLower 48\b|\b[A-Za-z]-\d+\b|\b(?:Boeing|Airbus)\s+[A-Z]?\d{3,4}\b")
 YEARS = range(1990, 2101)
 MAX_RANK = 20
 EPSILON = 1e-9
@@ -38,6 +42,7 @@ class Found:
 
 def extract(text: str) -> list[Found]:
     text = text.replace("−", "-")  # unicode minus
+    text = NAMES.sub(lambda m: " " * len(m.group(0)), text)  # same length: offsets stay valid
     found = []
     for m in NUMBER.finditer(text):
         digits = m.group(1).replace(",", "")

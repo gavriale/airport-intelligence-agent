@@ -196,12 +196,34 @@ async def test_live_status_failure_is_a_clean_tool_error(memory_repo):
 
 
 async def test_methodology_lists_weights_definitions_and_limits(analytics):
-    everything = analytics.methodology("all")
+    everything = await analytics.methodology("all")
 
     assert everything["score"]["weights"]["growth"] == 0.25
     assert {m["key"] for m in everything["metrics"]} >= {"growth", "demand_gap", "peak"}
     assert "long_haul" in everything["limits"]
-    assert set(analytics.methodology("score")) == {"score"}
+    assert everything["as_of"] == "Apr 2026"
+
+
+async def test_methodology_always_says_what_the_score_does_not_measure(analytics):
+    for topic in ("score", "metrics", "limits", "all"):
+        result = await analytics.methodology(topic)
+
+        text = " ".join(result["does_not_measure"])
+        assert "terminal capacity" in text and "Profitability" in text and "delay" in text
+
+
+async def test_methodology_limits_have_no_unfilled_placeholders(analytics):
+    limits = (await analytics.methodology("limits"))["limits"]
+
+    assert "{as_of}" not in str(limits) and "{seats" not in str(limits)
+    assert any("Apr 2026" in text for text in limits["data"])
+
+
+async def test_a_topic_returns_only_its_part_plus_the_always_included_limits(analytics):
+    result = await analytics.methodology("score")
+
+    assert {"score", "does_not_measure"} <= set(result)
+    assert "metrics" not in result and "limits" not in result
 
 
 async def test_every_data_result_has_as_of_data_period_and_caveats(analytics):

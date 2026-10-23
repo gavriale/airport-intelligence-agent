@@ -43,6 +43,15 @@ PRICES = {"claude-sonnet-5-5": (2.0, 10.0)}  # taken from the published price li
 CACHE_READ_FACTOR = 0.10
 CACHE_WRITE_FACTOR = 1.25
 
+# Next-step suggestions may describe the kind of data needed but may not name specific outside
+# datasets, reports or companies. A heuristic list of the names the model used in the first run
+# and the obvious neighbours; our own sources (BTS T-100, OurAirports, FAA) are fine to name.
+EXTERNAL_SOURCES = [
+    r"\b(DB1B|OAG|Cirium|FlightAware|FlightRadar24|OpenSky|Massport|Form 41)\b",
+    r"On-Time (Performance|Reporting)",
+    r"\bsegment (file|data)\b",
+]
+
 
 class ToolArgCheck(BaseModel):
     """Some call to `tool` must satisfy exactly one of these conditions on argument `arg`."""
@@ -67,9 +76,11 @@ class Expect(BaseModel):
     tool_args: list[ToolArgCheck] = []
     answer_matches: list[str] = []
     answer_not_matches: list[str] = []
-    max_words: int | None = None
+    max_words: int | None = None  # a failure: used by the style cases
+    warn_max_words: int | None = None  # only a warning: length is style, not correctness
     ranking_order: RankingOrder | None = None
     no_numbers: bool = False  # the answer may contain no data numbers at all
+    no_external_sources: bool = False  # the answer may not name datasets or sources we do not use
     judge_grounded: bool = False
 
 
@@ -95,6 +106,7 @@ class RunResult(BaseModel):
     run: int
     passed: bool
     failures: list[str]
+    warnings: list[str] = []
     latencies_ms: list[float]
     transcript: str
 
@@ -118,6 +130,27 @@ def _arg_satisfies(check: ToolArgCheck, value) -> bool:
     if check.keys_subset_of is not None:
         return isinstance(value, dict) and bool(value) and set(value) <= set(check.keys_subset_of)
     return False
+
+
+def count_words(text: str) -> int:
+    """Words as a reader counts them: table pipes and rules (| and ---) are not words."""
+    return sum(1 for token in text.split() if re.search(r"\w", token))
+
+
+def length_warnings(case: Case, results: list[TurnResult]) -> list[str]:
+    limit = case.expect.warn_max_words
+    words = count_words(results[-1].reply)
+    return [f"answer has {words} words, aim for {limit}"] if limit and words > limit else []
+
+
+def evidence_for(results: list[TurnResult]) -> list[str]:
+    """What the judge may rely on: each tool call with its arguments and its result or error.
+    The system prompt is deliberately not included."""
+    return [
+        f"{t.name}({json.dumps(t.arguments)}) -> {'ERROR ' if t.is_error else ''}{t.result}"
+        for r in results
+        for t in r.tool_calls
+    ]
 
 
 def _first_position(answer: str, tokens: list[str]) -> int | None:
@@ -161,11 +194,15 @@ def check_case(
     for pattern in expect.answer_matches:
         if not re.search(pattern, answer, re.IGNORECASE | re.MULTILINE):
             failures.append(f"answer missing /{pattern}/")
-    for pattern in expect.answer_not_matches:
+    forbidden = [
+        *expect.answer_not_matches,
+        *(EXTERNAL_SOURCES if expect.no_external_sources else []),
+    ]
+    for pattern in forbidden:
         if re.search(pattern, answer, re.IGNORECASE | re.MULTILINE):
             failures.append(f"answer must not match /{pattern}/")
-    if expect.max_words is not None and len(answer.split()) > expect.max_words:
-        failures.append(f"answer has {len(answer.split())} words, limit {expect.max_words}")
+    if expect.max_words is not None and count_words(answer) > expect.max_words:
+        failures.append(f"answer has {count_words(answer)} words, limit {expect.max_words}")
     if expect.ranking_order is not None:
         if reference.ranking:
             failures += check_ranking_order(answer, reference.ranking)
@@ -259,8 +296,7 @@ async def run_case_once(
     reference = await reference_for(case, results, container, config_text)
     failures = check_case(case, results, reference)
     if case.expect.judge_grounded:
-        evidence = [t.result for r in results for t in r.tool_calls]
-        verdict = await judge_groundedness(llm, evidence, results[-1].reply)
+        verdict = await judge_groundedness(llm, evidence_for(results), results[-1].reply)
         if not verdict.grounded:
             failures.append(f"judge: not grounded ({verdict.reason})")
     return RunResult(
@@ -269,6 +305,7 @@ async def run_case_once(
         run=run,
         passed=not failures,
         failures=failures,
+        warnings=length_warnings(case, results),
         latencies_ms=[r.latency_ms for r in results],
         transcript=_transcript(case, run, results, failures),
     )
@@ -340,6 +377,10 @@ def render(
         for r in failed:
             lines.append(f"- `{r.case_id}` run {r.run}:")
             lines += [f"  - {f}" for f in r.failures]
+    warned = [r for r in runs if r.warnings]
+    if warned:
+        lines += ["", "Warnings (style, not counted as failures):", ""]
+        lines += [f"- `{r.case_id}` run {r.run}: {'; '.join(r.warnings)}" for r in warned]
     return "\n".join(lines)
 
 

@@ -27,7 +27,7 @@
     ranking_order: {source: endpoint, region: "New England"}
     answer_matches: ['Apr(il)? 2026', 'capacity']
     answer_not_matches: ['\b(LAX|SFO|JFK|ORD)\b']
-    max_words: 250
+    warn_max_words: 200
     judge_grounded: true
 
 - id: ne_reweight
@@ -50,7 +50,7 @@
     tool_args:
       - {tool: compare_airports, arg: iatas, equals_set: [LAX, SNA]}
     answer_matches: ['\bLAX\b', '\bSNA\b', 'delay']
-    max_words: 250
+    warn_max_words: 200
     judge_grounded: true
 
 - id: anc_long_haul
@@ -67,7 +67,8 @@
     answer_not_matches:
       - '\d+(\.\d+)?\s?(%|percent)\s+(of\s+(its\s+|all\s+|the\s+)?(flights|departures)\s+)?(are|is|were)\s+long'
       - 'long[- ]haul (share|percentage) (is|of)\s+(about |roughly |around )?\d'
-    max_words: 250
+    no_external_sources: true
+    warn_max_words: 200
     judge_grounded: true
 
 - id: sfo_unmet
@@ -76,8 +77,14 @@
   turns: ["What is the unmet flight demand in SFO airport and why?"]
   expect:
     tools_called: [demand_pressure]
-    answer_matches: ['(cannot|can.?t|not|n.t)[^.]{0,60}measur', 'hypothes']
-    max_words: 250
+    answer_matches:
+      # An admission that unmet demand is not measured, in any of several wordings, within the
+      # same sentence as "unmet" or "demand": can't measure / can't give a number / isn't
+      # (directly) measured / not measurable / nobody measures it.
+      - '(\b(cannot|can.?t|can not|could not|couldn.?t|unable to|not able to|no way to)\b[^.]{0,60}\b(measur\w*|quantif\w*|determin\w*|calculat\w*|give (you )?a (number|figure)|tell you)|\b(nobody|no one)\b[^.]{0,20}\bmeasur\w*|\b(not|isn.?t|aren.?t|never)\b\s+(\w+\s+)?measur\w*)[^.]{0,80}(unmet|demand)|(unmet|demand)[^.]{0,80}(\b(cannot|can.?t|can not|could not|couldn.?t|unable to|not able to|no way to)\b[^.]{0,60}\b(measur\w*|quantif\w*|determin\w*|calculat\w*|give (you )?a (number|figure)|tell you)|\b(nobody|no one)\b[^.]{0,20}\bmeasur\w*|\b(not|isn.?t|aren.?t|never)\b\s+(\w+\s+)?measur\w*)'
+      - 'hypothes'
+    no_external_sources: true
+    warn_max_words: 250
     judge_grounded: true
 
 # ---------- what the data cannot answer ----------
@@ -91,6 +98,7 @@
       - '((\bno\b|\bnot\b|n.t\b|cannot|unavailable|without)[^.]{0,80}(carrier|airline))|((carrier|airline)[^.]{0,80}(\bno\b|\bnot\b|n.t\b|unavailable|cannot))'
     answer_not_matches:
       - '\b(Delta|JetBlue|Southwest|Spirit|American|Alaska)\b[^.]{0,50}(dominat|largest|biggest|leading|most)'
+    no_external_sources: true
 
 - id: delay_history
   category: data_limits
@@ -100,6 +108,7 @@
     answer_matches:
       - '((\bno\b|\bnot\b|n.t\b|cannot|unavailable)[^.]{0,80}delay)|(delay[^.]{0,80}(\bno\b|\bnot\b|n.t\b|unavailable|cannot))'
     answer_not_matches: ['\d+(\.\d+)?\s*(minutes?|mins?|hours?)\b']
+    no_external_sources: true
 
 - id: gates_and_terminals
   category: data_limits
@@ -108,6 +117,7 @@
   expect:
     answer_matches:
       - '((\bno\b|\bnot\b|n.t\b|cannot|unavailable)[^.]{0,80}(gate|terminal))|((gate|terminal)[^.]{0,80}(\bno\b|\bnot\b|n.t\b|unavailable|cannot))'
+    no_external_sources: true
 
 - id: profit
   category: data_limits
@@ -195,4 +205,21 @@
   expect:
     tools_not_called: [search_airports, get_airport_profile, rank_airports, compare_airports, get_distance_profile, demand_pressure, get_live_status, get_methodology]
     answer_matches: ['(can.?t|cannot|outside|only|unable|not able)']
-    max_words: 80
+    warn_max_words: 80
+
+# ---------- style: length is checked here, and only here, as a failure ----------
+
+- id: length_plain
+  category: style
+  turns: ["Which US airport has the highest Expansion Pressure Score?"]
+  expect:
+    tools_called: [rank_airports]
+    max_words: 200
+    judge_grounded: true
+
+- id: length_why
+  category: style
+  turns: ["Why does Boston Logan rank where it does among the New England airports?"]
+  expect:
+    max_words: 250
+    judge_grounded: true

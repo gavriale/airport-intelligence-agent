@@ -6,11 +6,15 @@ from pydantic import BaseModel
 
 from core.interfaces import LLMProvider, Message
 
-JUDGE_SYSTEM = """You are a strict evaluator of a customer-service assistant.
-You get EVIDENCE (raw tool results and retrieved documents) and the assistant's ANSWER.
+JUDGE_SYSTEM = """You are a strict evaluator of an analyst assistant.
+You get EVIDENCE and the assistant's ANSWER. The evidence lists every tool call the assistant made,
+with its arguments and its result (an error counts as a result). It does not include the
+assistant's own instructions.
 
 Rubric. The answer is GROUNDED only if all of these hold:
 1. Every number, date, name, status and policy statement in the answer appears in the evidence.
+   What the assistant says about its own tool calls (which tool, which arguments, that it failed)
+   is supported by the evidence when it matches the listed calls.
 2. The answer does not contradict the evidence.
 3. If the evidence is missing or contains an error, the answer says it cannot provide the data
    and does not state or guess any specific figure.
@@ -25,7 +29,7 @@ class JudgeVerdict(BaseModel):
 
 
 async def judge_groundedness(llm: LLMProvider, evidence: list[str], answer: str) -> JudgeVerdict:
-    evidence_text = "\n".join(evidence) or "(no tool results)"
+    evidence_text = "\n".join(evidence) or "(the assistant made no tool calls)"
     prompt = f"EVIDENCE:\n{evidence_text}\n\nANSWER:\n{answer}"
     response = await llm.complete(JUDGE_SYSTEM, [Message(role="user", content=prompt)], [])
     return _parse(response.text)

@@ -475,9 +475,14 @@ class Analytics:
             "caveats": self._caveats(snap, ["live"]),
         }
 
-    def methodology(self, topic: str) -> dict:
+    async def methodology(self, topic: str) -> dict:
+        snap = await self._load()
         scoring = self._config.scoring
-        parts: dict[str, Any] = {}
+        parts: dict[str, Any] = {
+            # Always returned, whatever the topic, so an answer about the score can say what it
+            # does not measure and have that grounded in a tool result.
+            "does_not_measure": list(self._config.does_not_measure)
+        }
         if topic in ("score", "all"):
             parts["score"] = {
                 "name": "Expansion Pressure Score",
@@ -508,8 +513,7 @@ class Analytics:
             )
         if topic in ("limits", "all"):
             parts["limits"] = {
-                name: texts
-                for name, texts in self._config.caveats.items()
-                if name in ("data", "score", "congestion", "unmet_demand", "long_haul", "cargo")
+                name: self._caveats(snap, [name])
+                for name in ("data", "score", "congestion", "unmet_demand", "long_haul", "cargo")
             }
-        return parts
+        return self._envelope(snap, parts, [])

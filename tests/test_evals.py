@@ -1,5 +1,6 @@
 """The eval machinery itself (checks, report, cost, case file) - no live model involved."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,9 @@ from evals.runner import (
     UsageMeter,
     check_case,
     check_ranking_order,
+    count_words,
+    evidence_for,
+    length_warnings,
     load_cases,
     p95,
     render,
@@ -215,6 +219,88 @@ def test_p95_and_report_show_safety_runs_as_x_of_n_and_list_failures():
     assert "`b` run 2" in report and "boom" in report
 
 
+# ---------- length, evidence, sources ----------
+
+
+def test_word_count_ignores_table_markup():
+    table = "| Rank | Airport |\n|---|---|\n| 1 | Bangor |"
+
+    assert count_words(table) == 4  # Rank, Airport, 1, Bangor: no pipes, no rules
+    assert count_words("one two three") == 3
+
+
+def test_length_fails_only_where_max_words_is_set_and_otherwise_warns():
+    long_answer = turn(" ".join(["word"] * 30))
+    style_case = case(max_words=20)
+    other_case = case(warn_max_words=20)
+
+    assert check_case(style_case, [long_answer])
+    assert check_case(other_case, [long_answer]) == []
+    assert length_warnings(other_case, [long_answer]) == ["answer has 30 words, aim for 20"]
+    assert length_warnings(style_case, [long_answer]) == []
+    assert length_warnings(other_case, [turn("short")]) == []
+
+
+def test_judge_evidence_lists_each_call_with_its_arguments_and_errors():
+    ok = call("rank_airports", {"region": "New England"}, result='{"ranking": []}')
+    failed = call("rank_airports", {"states": ["MA"]}, result='{"error": {}}', is_error=True)
+
+    evidence = evidence_for([turn("answer", ok, failed)])
+
+    assert evidence[0] == 'rank_airports({"region": "New England"}) -> {"ranking": []}'
+    assert evidence[1] == 'rank_airports({"states": ["MA"]}) -> ERROR {"error": {}}'
+
+
+def test_naming_an_outside_dataset_fails_only_where_the_case_forbids_it():
+    answer = turn("To answer this you would need BTS DB1B data.")
+
+    assert check_case(case(no_external_sources=True), [answer])
+    assert check_case(case(), [answer]) == []
+    assert (
+        check_case(case(no_external_sources=True), [turn("You would need route-level data.")]) == []
+    )
+
+
+def test_names_with_digits_are_not_numbers_in_a_case():
+    answer = turn("Domestic flights such as those to the Lower 48 are not in BTS T-100 routes.")
+
+    assert check_case(case(), [answer]) == []
+
+
+def sfo_admission_pattern():
+    cases = {c.id: c for c in load_cases(CASES_FILE)}
+    return re.compile(cases["sfo_unmet"].expect.answer_matches[0], re.IGNORECASE | re.MULTILINE)
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "The data can't measure unmet demand at SFO.",
+        "The data can't give a number for SFO's unmet demand. Nobody measures it directly.",
+        "Unmet demand isn't measured directly in this data.",
+        "Unmet demand is not directly measured by any public source.",
+        "SFO's unmet demand cannot be quantified from this data.",
+        "Unmet demand is not measurable with these tools.",
+        "I can't tell you the unmet demand at SFO.",
+    ],
+)
+def test_the_sfo_admission_check_accepts_equivalent_wordings(answer):
+    assert sfo_admission_pattern().search(answer)
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "SFO's unmet demand is 2.1 million passengers.",
+        "The score does not measure terminal capacity or profit.",  # admits something else
+        "Load factor measures how full planes are, and demand is high.",
+        "Demand looks strong at SFO.",
+    ],
+)
+def test_the_sfo_admission_check_still_rejects_answers_that_do_not_admit_it(answer):
+    assert not sfo_admission_pattern().search(answer)
+
+
 # ---------- the case file ----------
 
 
@@ -235,5 +321,12 @@ def test_the_assignment_questions_are_in_the_case_file():
     assert cases["ne_reweight"].expect.ranking_order.source == "tool"
     assert cases["heathrow_scope"].expect.no_numbers
     assert cases["backend_outage"].backend == "failing"
+    # Length fails only the style cases; everywhere else it is a warning.
+    with_failing_length = {c.id for c in cases.values() if c.expect.max_words}
+    assert with_failing_length == {"length_plain", "length_why"}
+    assert (
+        cases["length_why"].expect.max_words == 250
+        and cases["length_plain"].expect.max_words == 200
+    )
     for needed in ("la_vs_sna", "anc_long_haul", "sfo_unmet"):
         assert needed in cases

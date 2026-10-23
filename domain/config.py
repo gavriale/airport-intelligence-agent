@@ -34,6 +34,7 @@ class Config(BaseModel):
     regions: dict[str, list[str]]
     aliases: dict[str, list[str]]
     metrics: list[MetricDefinition]
+    does_not_measure: list[str]  # always included in the methodology answer
     caveats: dict[str, list[str]]
 
 

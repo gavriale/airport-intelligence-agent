@@ -44,6 +44,13 @@ metrics:
     label: Peak-month ratio
     definition: Busiest month's passengers divided by the average month. A higher value means a more peaked year.
 
+# What the Expansion Pressure Score does not measure. get_methodology always returns this.
+does_not_measure:
+  - "Physical terminal capacity: no terminal, gate or construction data is available."
+  - "Delays or congestion as passengers experience it: there is no delay history, and utilization is only a proxy."
+  - "Profitability or financial returns."
+  - "Unmet demand: only signals that demand may exceed capacity."
+
 # Texts attached to tool results. {placeholders} are filled in by the code.
 caveats:
   data:

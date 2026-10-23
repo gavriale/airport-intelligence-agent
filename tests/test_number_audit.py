@@ -89,6 +89,26 @@ def test_identifiers_with_digits_are_not_numbers():
     assert extract("a B737 or an H1 helipad") == []
 
 
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "flights to the Lower 48",
+        "BTS T-100 data",
+        "a Boeing 737 or an Airbus A320 or Airbus 320",
+        "form F-35 and U-2",
+    ],
+)
+def test_names_that_contain_digits_are_not_numbers(answer):
+    assert failures(answer, "") == []
+
+
+def test_a_standalone_number_next_to_such_a_name_is_still_checked():
+    result = failures("48 flights to the Lower 48 on T-100 data", "")
+
+    assert len(result) == 1 and "'48'" in result[0]
+    assert failures("100 routes in BTS T-100 data", "")  # the bare 100 is still ungrounded
+
+
 def test_extraction_reads_scale_words_and_tolerance():
     [m] = extract("36.6M passengers")
 

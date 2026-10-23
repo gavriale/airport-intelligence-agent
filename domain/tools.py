@@ -75,7 +75,7 @@ def build_tools(analytics: Analytics) -> list[Tool]:
         return await analytics.live(args.iata)
 
     async def get_methodology(args: MethodologyArgs) -> dict[str, Any]:
-        return analytics.methodology(args.topic)
+        return await analytics.methodology(args.topic)
 
     return [
         Tool(
