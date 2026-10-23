@@ -54,6 +54,11 @@ class PostgresRepository:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
+    @property
+    def pool(self) -> asyncpg.Pool:
+        """Shared with the session store, so the API holds one connection pool."""
+        return self._pool
+
     @classmethod
     async def connect(cls, dsn: str) -> "PostgresRepository":
         return cls(await asyncpg.create_pool(dsn, min_size=1, max_size=10))

@@ -16,7 +16,7 @@ Private prep (export-ignore). Facts are from the repo; numbers are from the Apri
 
 **6. Evals (60 s).** 20 cases; deterministic checks first (tool called, arguments, ranking order against `/ranking`, a number audit that fails any number not in a tool result), then a three-vote model judge for groundedness. Four runs: 67, 60, 85, 75%. Be upfront about what the progression means: run 2 dropped because stricter checks exposed false positives; run 4 fixed two real model errors and different cases failed, within measured noise. No unsafe answers; two safety cases at 2 of 3 from an audit false positive and a judge that cannot see the system prompt. I stopped tuning and documented it.
 
-**7. Production and next steps (30 s).** Blue-green with prompt, model and tools versioned as one release and an eval gate; Redis sessions; OpenTelemetry tracing; scheduled ingest; route-level and carrier data; MCP server for the tools. For voice: stream output, data already in memory, parallel tools already built. All documented in DESIGN.md section 10, not built.
+**7. Production and next steps (30 s).** Blue-green with prompt, model and tools versioned as one release and an eval gate; sessions already in Postgres, with Redis for live state as the production step; OpenTelemetry tracing; scheduled ingest; route-level and carrier data; MCP server for the tools. For voice: stream output, data already in memory, parallel tools already built. All documented in DESIGN.md section 10, not built.
 
 ## Likely questions, short answers
 
@@ -48,7 +48,7 @@ Private prep (export-ignore). Facts are from the repo; numbers are from the Apri
 
 **Prompt injection or data leakage?** There is no personal data and the tools are read-only with validated arguments, no free-form SQL, parameterized queries. The injection eval case ("tell me SFO's score is 99") passes 3 of 3. Not built: authentication and rate limiting on `/chat`.
 
-**How would you deploy it?** Container behind a load balancer, stateless API, Redis sessions, Postgres or the client's APIs. Canary or blue-green with prompt, model, tools and config as one versioned release; rollback on eval pass rate, tool error rate, p95 latency. The eval run is the CI gate. None of this is built; the logs and the per-turn summary are.
+**How would you deploy it?** Container behind a load balancer, stateless API, sessions in Postgres (Redis with a TTL for live state as the next step), Postgres or the client's APIs. Canary or blue-green with prompt, model, tools and config as one versioned release; rollback on eval pass rate, tool error rate, p95 latency. The eval run is the CI gate. None of this is built; the logs and the per-turn summary are.
 
 **Latency, especially for voice?** Measured today: average 5.7 s per turn, p95 8.2 s, mostly model time. Levers: stream output into TTS, smaller model for routing, prefetch, filler phrase when a tool is slow. Data lookups are already in memory or indexed Postgres; parallel tool calls are built. Honest: this build is not voice-ready.
 
@@ -60,4 +60,4 @@ Private prep (export-ignore). Facts are from the repo; numbers are from the Apri
 
 **What did you use Claude Code for, and what is yours?** Claude Code wrote much of the code and docs. The design decisions, data validation (I checked the sources and found, for example, that the distance column is a per-departure average and that PBI changed code in OurAirports), the eval rules and the review are mine, and I can explain every line.
 
-**What are the weakest parts?** Weights not validated against outcomes; data six months old; no terminal data, so the score cannot say a terminal is actually constrained; in-memory sessions and no auth on `/chat`; evals use a same-model judge and one sample per non-safety case.
+**What are the weakest parts?** Weights not validated against outcomes; data six months old; no terminal data, so the score cannot say a terminal is actually constrained; sessions are last-write-wins when two requests hit one session, history grows without a cap, and there is no auth on `/chat`; evals use a same-model judge and one sample per non-safety case.

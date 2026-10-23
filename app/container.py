@@ -10,6 +10,7 @@ from adapters.llm_cache import CachingLLMProvider
 from adapters.memory_repository import MemoryRepository
 from adapters.memory_session_store import MemorySessionStore
 from adapters.postgres_repository import PostgresRepository
+from adapters.postgres_session_store import PostgresSessionStore
 from app.settings import Settings
 from core.agent import Agent
 from core.interfaces import LLMProvider, SessionStore
@@ -37,12 +38,15 @@ async def _noop() -> None:
     return None
 
 
-async def _build_repository(settings: Settings) -> tuple[AirportRepository, Callable]:
+async def _build_backend(
+    settings: Settings,
+) -> tuple[AirportRepository, SessionStore, Callable]:
+    """Postgres holds both the airport snapshot and the sessions; memory is for tests and demos."""
     if settings.data_backend == "memory":
-        return MemoryRepository(DATA_DIR), _noop
+        return MemoryRepository(DATA_DIR), MemorySessionStore(), _noop
     postgres = await PostgresRepository.connect(settings.database_url)
-    await postgres.load_snapshot(DATA_DIR / "schema.sql", DATA_DIR)
-    return postgres, postgres.close
+    await postgres.load_snapshot(DATA_DIR / "schema.sql", DATA_DIR)  # also creates `sessions`
+    return postgres, PostgresSessionStore(postgres.pool), postgres.close
 
 
 async def build_container(
@@ -54,8 +58,9 @@ async def build_container(
 ) -> Container:
     """`llm`, `repository` and `live_status` can be overridden (tests, evals)."""
     close = _noop
+    sessions: SessionStore = MemorySessionStore()
     if repository is None:
-        repository, close = await _build_repository(settings)
+        repository, sessions, close = await _build_backend(settings)
     api_key = settings.anthropic_api_key.get_secret_value().strip()
     if llm is None and api_key:
         llm = AnthropicLLM(api_key, settings.model)
@@ -66,7 +71,6 @@ async def build_container(
         repository, live_status or FaaStatusProvider(), load_config(DOMAIN_DIR / "config.yaml")
     )
     tools = ToolRegistry(build_tools(analytics), timeout_s=settings.tool_timeout_s)
-    sessions = MemorySessionStore()
     agent = (
         Agent(
             llm,

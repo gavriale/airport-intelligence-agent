@@ -2,7 +2,7 @@ from core.session import Session
 
 
 class MemorySessionStore:
-    """Per-process dict. Replace with Redis (same interface) to run more than one replica."""
+    """Per-process dict, for unit tests, the CLI and evals. The API uses PostgresSessionStore."""
 
     def __init__(self) -> None:
         self._sessions: dict[str, Session] = {}

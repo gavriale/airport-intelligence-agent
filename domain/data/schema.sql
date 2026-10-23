@@ -52,3 +52,12 @@ CREATE TABLE IF NOT EXISTS snapshot_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- Conversation state (one row per chat session). Not part of the airport snapshot: the loader
+-- never truncates it, so conversations survive restarts and snapshot reloads.
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id TEXT PRIMARY KEY,
+    messages   JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

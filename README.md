@@ -19,7 +19,7 @@ docker compose up --build   # Postgres + API; loads the committed snapshot at st
 
 Open `http://localhost:8000` for the chat page. If port 5432 is taken: `POSTGRES_PORT=5433 docker compose up --build`.
 
-Without Docker (uses the in-memory repository, same data): `pip install -e ".[dev]"`, then `DATA_BACKEND=memory python cli.py` (or `make chat`) for a terminal chat.
+Without Docker (uses the in-memory repository and in-memory sessions, same data): `pip install -e ".[dev]"`, then `DATA_BACKEND=memory python cli.py` (or `make chat`) for a terminal chat.
 
 Try: *Which airports in New England are strong candidates for terminal expansion?* then *What if we weigh passenger growth much more heavily?*, or *Compare LA and Santa Ana airport congestion.*
 

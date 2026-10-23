@@ -42,7 +42,7 @@ flowchart LR
 
 **One question:** `POST /chat` runs the loop: the model gets the conversation and tool schemas; requested tools are validated and run (concurrently when independent, with timeouts and one retry, errors returned as results); results go back to the model, up to six rounds; the answer is returned with a per-turn log. Last eval run: average 5.7 s per turn, p95 8.2 s.
 
-`core/` (loop, tool registry, sessions, logging) knows nothing about airports; `domain/` holds everything airport-specific; adapters are wired in one place (`app/container.py`). The API is stateless: state lives behind a `SessionStore` interface.
+`core/` (loop, tool registry, sessions, logging) knows nothing about airports; `domain/` holds everything airport-specific; adapters are wired in one place (`app/container.py`). The API is stateless: conversation state lives behind a `SessionStore` interface and is stored in Postgres, so a restart or a second replica keeps every conversation.
 
 ## 3. Data sources
 
@@ -101,7 +101,7 @@ Built with Claude Code; design decisions, data validation and review are mine.
 - **Snapshot data, not live calls:** speed and reproducibility versus freshness.
 - **Proxies over false precision.** A confident long-haul percentage or "unmet demand" figure would be invented.
 - **Judgmental weights.** Honest and adjustable, but not validated against expansion outcomes; that needs a labelled history I do not have.
-- **In-memory sessions.** Fine for one process; two replicas need the Redis store.
+- **Sessions in Postgres.** Already running, so no new service, and conversations survive restarts. Not built: Redis with a TTL for live state with Postgres for permanent transcripts; concurrent requests on one session are last-write-wins.
 - **Reliability:** 30 s model and 10 s tool timeouts, each with one retry, then a graceful message.
 
 ## 8. Evaluation
@@ -133,7 +133,7 @@ Each is one more snapshot column, one config entry and one more percentile in `d
 ## 10. Next steps and production (documented, not built)
 
 - **Data:** route-level and carrier data; monthly scheduled ingest with a diff report; delay history.
-- **Serving:** Redis sessions with a per-session lock; auth and rate limits on `/chat`; MCP server for the tools.
+- **Serving:** Redis with a TTL for live sessions and Postgres for transcripts and audit; a per-session lock or version column (today the last write wins); a cap or summary for long histories; cleanup of old sessions; auth and rate limits on `/chat`; MCP server for the tools.
 - **Voice latency:** stream output, smaller routing model, filler phrase on slow tools (data in memory and parallel tools already done).
 - **Deployment:** containers, blue-green or canary, prompt+model+tools+config versioned as one release; rollback on eval pass rate, tool errors, p95 latency; `make eval` as CI gate.
 - **Observability:** structured logs with correlation ids exist; OpenTelemetry traces, dashboards, cost per conversation, alerts do not.

@@ -32,11 +32,16 @@ Decisions for the airport assignment. Entries marked **planned** are decided but
 - **Alternatives considered:** A smaller model (faster, cheaper, may be weaker at multi-step tool use); a larger model (stronger, slower, costlier).
 - **Tradeoff / when I'd change it:** The final choice should come from the eval results, including whether a smaller model passes the same cases. That comparison has not been run.
 
-## In-memory sessions behind `SessionStore`
-- **Chosen:** A per-process dictionary implementing `SessionStore`. A session holds only the message history.
-- **Why:** The simplest thing that works, with the API stateless by design.
-- **Alternatives considered:** Redis from day one (more moving parts for a one-day assignment).
-- **Tradeoff / when I'd change it:** Sessions are lost on restart and are not shared between replicas. With more than one replica I would use Redis with an expiry and a per-session lock; nothing in `core/` would change.
+## Sessions in Postgres behind `SessionStore`
+- **Chosen:** `PostgresSessionStore` keeps one row per session in a `sessions` table (`session_id` primary key, `messages` JSONB, `created_at`, `updated_at`), written with an upsert and read with parameterized queries, on the same connection pool as the airport data. `Message`, `ToolCall` and `ToolResult` convert to JSON through two small functions in the adapter (`messages_to_json`, `messages_from_json`); a test checks a conversation with text, parallel tool calls and an error result comes back equal. The table lives in `schema.sql` but is not part of the airport snapshot, and the snapshot loader never truncates it (a test reloads a different snapshot and checks the session survives). `MemorySessionStore` stays for unit tests, the CLI and evals (`DATA_BACKEND=memory`). An unknown id is an empty session, saved on the first `save`. `core/` did not change.
+- **Why:** With the in-memory store a restart or deploy wiped every conversation and a second replica could not see them. Postgres is already running, so this adds no service. Checked by hand: chat in one session, `docker compose restart api`, then "Check live FAA status for both airports" with the same session id: the agent still knew the airports (the stored history went from 4 to 8 messages).
+- **Alternatives considered:** Redis (right for live session state, but a new service for this assignment); keeping the dictionary (loses conversations); a normalized messages table (queryable per message, more code, nothing here queries it).
+- **Tradeoff / when I'd change it:** Not built, in order of importance:
+  - **Production split:** Redis with a TTL for live session state, Postgres for permanent transcripts and the audit log.
+  - **Concurrent requests on one session:** the last write wins (the second turn can overwrite the first). The fix is a per-session lock or a version column checked on save.
+  - **History growth:** every tool result is stored in full and the whole row is rewritten each turn, so long chats grow in size, tokens and latency. Cap the last N turns or summarize older ones.
+  - **Cleanup:** old sessions are never deleted. Needs a job that removes rows past an age limit (an index on `updated_at`).
+  - Data survives `docker compose down` because the Postgres data directory is the named volume `pgdata` (only `down -v` deletes it, and the sessions with it).
 
 ## Provider-neutral messages with tool blocks
 - **Chosen:** `Message` carries `tool_calls` and `tool_results`; only `adapters/anthropic_llm.py` knows the provider's block format.
